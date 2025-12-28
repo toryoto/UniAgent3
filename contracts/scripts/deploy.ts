@@ -1,38 +1,38 @@
-import { ethers } from "hardhat";
+import { ethers } from 'hardhat';
 
 async function main() {
-  console.log("Starting deployment...");
+  console.log('Starting deployment...');
 
   // Get deployer account
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying contracts with account:", deployer.address);
+  console.log('Deploying contracts with account:', deployer.address);
 
   // Get account balance
   const balance = await ethers.provider.getBalance(deployer.address);
-  console.log("Account balance:", ethers.formatEther(balance), "ETH");
+  console.log('Account balance:', ethers.formatEther(balance), 'ETH');
 
   // Deploy AgentRegistry
-  console.log("\nDeploying AgentRegistry...");
-  const AgentRegistry = await ethers.getContractFactory("AgentRegistry");
+  console.log('\nDeploying AgentRegistry...');
+  const AgentRegistry = await ethers.getContractFactory('AgentRegistry');
   const agentRegistry = await AgentRegistry.deploy();
-  
+
   await agentRegistry.waitForDeployment();
   const agentRegistryAddress = await agentRegistry.getAddress();
 
-  console.log("✅ AgentRegistry deployed to:", agentRegistryAddress);
+  console.log('✅ AgentRegistry deployed to:', agentRegistryAddress);
 
   // Display deployment info
-  console.log("\n==================================================");
-  console.log("📝 Deployment Summary");
-  console.log("==================================================");
-  console.log("Network:", (await ethers.provider.getNetwork()).name);
-  console.log("Chain ID:", (await ethers.provider.getNetwork()).chainId);
-  console.log("Deployer:", deployer.address);
-  console.log("AgentRegistry:", agentRegistryAddress);
-  console.log("==================================================");
+  console.log('\n==================================================');
+  console.log('📝 Deployment Summary');
+  console.log('==================================================');
+  console.log('Network:', (await ethers.provider.getNetwork()).name);
+  console.log('Chain ID:', (await ethers.provider.getNetwork()).chainId);
+  console.log('Deployer:', deployer.address);
+  console.log('AgentRegistry:', agentRegistryAddress);
+  console.log('==================================================');
 
   // Save deployment info to file
-  const fs = require("fs");
+  const fs = require('fs');
   const deploymentInfo = {
     network: (await ethers.provider.getNetwork()).name,
     chainId: (await ethers.provider.getNetwork()).chainId.toString(),
@@ -41,7 +41,7 @@ async function main() {
     timestamp: new Date().toISOString(),
   };
 
-  const deploymentsDir = "./deployments";
+  const deploymentsDir = './deployments';
   if (!fs.existsSync(deploymentsDir)) {
     fs.mkdirSync(deploymentsDir);
   }
@@ -52,12 +52,13 @@ async function main() {
 
   // Wait for block confirmations on live networks
   const network = await ethers.provider.getNetwork();
-  if (network.chainId !== 31337n) { // Not localhost
-    console.log("\n⏳ Waiting for block confirmations...");
+  if (network.chainId !== 31337n) {
+    // Not localhost
+    console.log('\n⏳ Waiting for block confirmations...');
     await agentRegistry.deploymentTransaction()?.wait(5);
-    console.log("✅ Confirmed!");
+    console.log('✅ Confirmed!');
 
-    console.log("\n📋 To verify the contract on Etherscan, run:");
+    console.log('\n📋 To verify the contract on Etherscan, run:');
     console.log(`npx hardhat verify --network sepolia ${agentRegistryAddress}`);
   }
 }
@@ -68,4 +69,3 @@ main()
     console.error(error);
     process.exit(1);
   });
-

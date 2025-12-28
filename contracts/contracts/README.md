@@ -5,21 +5,25 @@ AgentCardを管理するオンチェーンレジストリコントラクト。
 ## 機能概要
 
 ### 1. AgentCard登録・管理
+
 - `registerAgent`: 新しいAgentCardを登録
 - `updateAgent`: AgentCard情報を更新（ownerのみ）
 - `activateAgent` / `deactivateAgent`: エージェントの有効/無効化
 
 ### 2. 検索機能
+
 - `getAgentCard`: 単一のAgentCardを取得
 - `getAllAgentIds`: 全AgentCardのIDを取得
 - `getAgentsByCategory`: カテゴリで検索
 - `getActiveAgentsByCategory`: アクティブなエージェントをカテゴリで検索
 
 ### 3. Transaction記録
+
 - `recordTransaction`: 使用履歴を記録（評価なし）
 - `updateTransactionRating`: 既存トランザクションの評価を追加/更新
 
 ### 4. 評価システム
+
 - 5段階評価（1-5）をサポート
 - `totalRatings`と`ratingCount`で平均評価を計算
 - `getAverageRating`: 平均評価を取得（100倍の値、例: 450 = 4.50）
@@ -27,6 +31,7 @@ AgentCardを管理するオンチェーンレジストリコントラクト。
 ## データ構造
 
 ### AgentCard
+
 - A2A標準フィールド: agentId, name, description, url, version, defaultInputModes, defaultOutputModes, skills
 - ブロックチェーン拡張: owner, isActive, createdAt
 - 評価システム: totalRatings, ratingCount
@@ -34,12 +39,14 @@ AgentCardを管理するオンチェーンレジストリコントラクト。
 - カテゴリ: category
 
 ### PaymentInfo
+
 - tokenAddress: USDCコントラクトアドレス
 - receiverAddress: エージェントの受取アドレス
 - pricePerCall: 1回あたりの価格（6 decimals）
 - chain: チェーン名（"base"など）
 
 ### Transaction
+
 - txId: トランザクションID
 - agentId: エージェントID
 - caller: 呼び出し元アドレス
@@ -112,4 +119,3 @@ registry.updateTransactionRating(keccak256("tx-123"), 5);
 - `pricePerCall`は6 decimals（USDCの場合）
 - オーナーのみがエージェント情報を更新可能
 - トランザクションの評価は呼び出し元のみが更新可能
-

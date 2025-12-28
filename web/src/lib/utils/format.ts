@@ -1,6 +1,6 @@
 /**
  * Formatting Utilities
- * 
+ *
  * 数値、日付、アドレスなどのフォーマット関数
  */
 
@@ -45,7 +45,7 @@ export function formatRelativeTime(timestamp: Date | bigint): string {
   if (diffMin < 60) return `${diffMin}分前`;
   if (diffHour < 24) return `${diffHour}時間前`;
   if (diffDay < 7) return `${diffDay}日前`;
-  
+
   return date.toLocaleDateString('ja-JP');
 }
 
@@ -72,4 +72,3 @@ export function formatCategory(category: string): string {
   };
   return categoryMap[category.toLowerCase()] || category;
 }
-

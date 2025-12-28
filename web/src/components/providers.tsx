@@ -2,7 +2,7 @@
 
 /**
  * Providers Component
- * 
+ *
  * アプリケーション全体で使用するプロバイダーをラップ
  * - PrivyProvider: 認証とウォレット管理
  * - QueryClientProvider: React Query (データフェッチング)
@@ -49,16 +49,18 @@ export function Providers({ children }: ProvidersProps) {
         },
         loginMethods: ['email', 'google'],
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets' as any,
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
+          solana: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <WagmiProvider config={config}>
-          {children}
-        </WagmiProvider>
+        <WagmiProvider config={config}>{children}</WagmiProvider>
       </QueryClientProvider>
     </PrivyProvider>
   );
 }
-

@@ -1,19 +1,21 @@
 ## 目的
+
 - PoCで使用するAgentCardやSmartContractの構造定義を行う
 
 ## AgentCardのjson形式
+
 ```json
 {
   "agentId": "0x1234567890abcdef...",
-  
+
   "name": "FlightFinderPro",
   "description": "最安値フライト検索エージェント",
   "url": "https://flight-agent.example.com",
   "version": "1.0.0",
-  
+
   "defaultInputModes": ["text/plain"],
   "defaultOutputModes": ["application/json"],
-  
+
   "skills": [
     {
       "id": "search-flights",
@@ -26,7 +28,7 @@
       "description": "複数航空会社の価格比較"
     }
   ],
-  
+
   "capabilities": {
     "streaming": false,
     "multiModal": false,
@@ -43,15 +45,15 @@
       }
     ]
   },
-  
+
   "owner": "0x9876543210fedcba...",
   "isActive": true,
   "createdAt": 1735286400,
-  
+
   "category": "travel",
-  
+
   "rating": {
-    "average": 4.50,
+    "average": 4.5,
     "totalRatings": 45,
     "ratingCount": 10
   }
@@ -59,6 +61,7 @@
 ```
 
 ## Solidityデータ構造
+
 ```solidity
 struct Skill {
     string id;
@@ -81,20 +84,20 @@ struct AgentCard {
     string url;
     string version;
     Skill[] skills;
-    
+
     // === ブロックチェーン拡張 ===
     address owner;
     bool isActive;
     uint256 createdAt;
-    
+
     // === シンプル評価システム ===
     uint256 totalRatings;      // 評価の合計（例: 1+5+4 = 10）
     uint256 ratingCount;       // 評価回数（例: 3回）
     // 平均評価 = totalRatings / ratingCount
-    
+
     // === x402決済情報 ===
     PaymentInfo payment;
-    
+
     // === カテゴリ ===
     string category;
 }

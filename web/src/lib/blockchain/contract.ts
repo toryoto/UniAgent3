@@ -1,6 +1,6 @@
 /**
  * Agent Registry Contract Utilities
- * 
+ *
  * ethers.jsを使用したスマートコントラクトとのやり取り
  */
 

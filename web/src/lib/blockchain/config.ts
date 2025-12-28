@@ -1,6 +1,6 @@
 /**
  * Blockchain Configuration
- * 
+ *
  * Base Sepoliaネットワークとスマートコントラクトの設定
  */
 
@@ -44,4 +44,3 @@ export function parseUSDC(amount: number): bigint {
 export function formatUSDCAmount(amount: bigint): number {
   return Number(amount) / USDC_UNIT;
 }
-

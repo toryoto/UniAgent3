@@ -7,7 +7,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-      
+
       <main className="flex-1">
         {/* Hero Section */}
         <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
@@ -44,9 +44,7 @@ export default function HomePage() {
         {/* Features Section */}
         <section className="py-20">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">
-              コアバリュー
-            </h2>
+            <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">コアバリュー</h2>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
               <FeatureCard
                 icon={<Globe className="h-8 w-8 text-blue-600" />}
@@ -75,9 +73,7 @@ export default function HomePage() {
         {/* How It Works Section */}
         <section className="bg-gray-50 py-20">
           <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">
-              使い方
-            </h2>
+            <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">使い方</h2>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               <StepCard
                 step="1"
@@ -101,12 +97,8 @@ export default function HomePage() {
         {/* CTA Section */}
         <section className="py-20">
           <div className="mx-auto max-w-4xl px-4 text-center">
-            <h2 className="mb-6 text-3xl font-bold text-gray-900">
-              今すぐ始めましょう
-            </h2>
-            <p className="mb-8 text-lg text-gray-600">
-              数分でエージェントエコシステムにアクセス
-            </p>
+            <h2 className="mb-6 text-3xl font-bold text-gray-900">今すぐ始めましょう</h2>
+            <p className="mb-8 text-lg text-gray-600">数分でエージェントエコシステムにアクセス</p>
             <Link
               href="/wallet"
               className="inline-block rounded-lg bg-blue-600 px-8 py-3 text-lg font-semibold text-white hover:bg-blue-700 transition-colors"
@@ -116,7 +108,7 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-      
+
       <Footer />
     </div>
   );

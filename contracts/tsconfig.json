@@ -15,4 +15,3 @@
   "include": ["./scripts/**/*", "./test/**/*", "./hardhat.config.ts"],
   "exclude": ["node_modules", "dist", "cache", "artifacts"]
 }
-

@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+out
+build
+dist
+.turbo
+
+# Cache
+.cache
+*.log
+.DS_Store
+
+# Generated files
+coverage
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Contracts
+contracts/artifacts
+contracts/cache
+contracts/typechain-types
+
+# Lock files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Environment
+.env
+.env.*
+!.env.example
+

@@ -1,6 +1,6 @@
 /**
  * Wagmi Configuration
- * 
+ *
  * WagmiとPrivyの統合設定
  */
 
@@ -14,4 +14,3 @@ export const config = createConfig({
     [sepolia.id]: http(),
   },
 });
-

@@ -5,6 +5,7 @@
 ## デプロイ済みコントラクト
 
 ### AgentRegistry (Sepolia)
+
 - **Address**: `0x1a4Ec58FE22aFe2624eaE8B5085aeBf85BCEB4e3`
 - **Network**: Sepolia Testnet
 - **Etherscan**: https://sepolia.etherscan.io/address/0x1a4Ec58FE22aFe2624eaE8B5085aeBf85BCEB4e3
@@ -12,6 +13,7 @@
 - **Features**: Agent image URLs supported
 
 ### Sample Agents
+
 1. **FlightFinderPro** - `0x0bdd...b75e` - 0.01 USDC (with image)
 2. **HotelBookerPro** - `0x70fc...dd0e` - 0.015 USDC (with image)
 3. **TourismGuide** - `0xc1de...b0fc` - 0.02 USDC (with image)

@@ -77,21 +77,25 @@ npm run dev
 ## 主要機能
 
 ### 1. ユーザー認証・ウォレット管理
+
 - Privyによるソーシャルログイン
 - ウォレット自動作成
 - USDC入金・管理
 
 ### 2. エージェント検索・発見
+
 - マーケットプレイス画面
 - カテゴリ・価格・評価による検索
 - AgentCard詳細表示
 
 ### 3. チャットインターフェース
+
 - Claudeエージェントとの対話
 - MCP Tools呼び出し
 - 実行ログ表示
 
 ### 4. トランザクション履歴
+
 - 決済履歴の表示
 - 評価入力
 - 統計情報
@@ -120,6 +124,7 @@ npm run type-check
 スマートコントラクトとの連携は`src/lib/blockchain/contract.ts`で管理されています。
 
 主要な関数:
+
 - `getAllAgentIds()`: 全エージェントID取得
 - `getAgentCard(agentId)`: AgentCard詳細取得
 - `recordTransaction()`: トランザクション記録
@@ -138,6 +143,7 @@ npm run type-check
 Tailwind CSSを使用したユーティリティファーストのスタイリング。
 
 共通のユーティリティ関数:
+
 - `cn()`: クラス名のマージ (`src/lib/utils/cn.ts`)
 - `formatUSDC()`: USDC金額フォーマット
 - `formatAddress()`: アドレス短縮表示
@@ -147,6 +153,7 @@ Tailwind CSSを使用したユーティリティファーストのスタイリ�
 全ての型定義は`src/lib/types/index.ts`に集約されています。
 
 主要な型:
+
 - `AgentCard`: エージェント情報
 - `Transaction`: トランザクション情報
 - `ChatMessage`: チャットメッセージ
