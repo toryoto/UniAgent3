@@ -50,7 +50,8 @@ describe("AgentRegistry", function () {
           ["application/json"],
           skills,
           payment,
-          "test"
+          "test",
+          "https://example.com/images/test-agent.png"
         )
       ).to.emit(agentRegistry, "AgentRegistered")
         .withArgs(agent1Id, "TestAgent1", agent1Owner.address, "test");
@@ -83,7 +84,8 @@ describe("AgentRegistry", function () {
         ["application/json"],
         skills,
         payment,
-        "test"
+        "test",
+        ""
       );
 
       // Try to register with same ID
@@ -98,7 +100,8 @@ describe("AgentRegistry", function () {
           ["application/json"],
           skills,
           payment,
-          "test"
+          "test",
+          ""
         )
       ).to.be.revertedWith("AgentRegistry: agent already exists");
     });
@@ -123,7 +126,8 @@ describe("AgentRegistry", function () {
           ["application/json"],
           skills,
           payment,
-          "test"
+          "test",
+          ""
         )
       ).to.be.revertedWith("AgentRegistry: name required");
     });
@@ -149,7 +153,8 @@ describe("AgentRegistry", function () {
         ["application/json"],
         skills,
         payment,
-        "test"
+        "test",
+        ""
       );
     });
 
@@ -168,7 +173,8 @@ describe("AgentRegistry", function () {
           "Updated description",
           "https://updated.com",
           "2.0.0",
-          newPayment
+          newPayment,
+          "https://example.com/images/updated.png"
         )
       ).to.emit(agentRegistry, "AgentUpdated")
         .withArgs(agent1Id, agent1Owner.address);
@@ -195,7 +201,8 @@ describe("AgentRegistry", function () {
           "",
           "",
           "",
-          emptyPayment
+          emptyPayment,
+          ""
         )
       ).to.be.revertedWith("AgentRegistry: not owner");
     });
@@ -245,7 +252,8 @@ describe("AgentRegistry", function () {
         ["application/json"],
         skills,
         payment,
-        "test"
+        "test",
+        ""
       );
     });
 
@@ -333,7 +341,8 @@ describe("AgentRegistry", function () {
         ["application/json"],
         skills,
         payment,
-        "test"
+        "test",
+        ""
       );
     });
 
@@ -384,7 +393,8 @@ describe("AgentRegistry", function () {
         ["application/json"],
         skills,
         payment,
-        "travel"
+        "travel",
+        ""
       );
 
       await agentRegistry.connect(agent2Owner).registerAgent(
@@ -397,7 +407,8 @@ describe("AgentRegistry", function () {
         ["application/json"],
         skills,
         payment,
-        "travel"
+        "travel",
+        ""
       );
     });
 

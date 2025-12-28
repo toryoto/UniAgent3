@@ -56,7 +56,8 @@ async function main() {
       ["application/json"],
       agent1Skills,
       agent1Payment,
-      "travel"
+      "travel",
+      "https://via.placeholder.com/150/3498db/ffffff?text=Flight"
     );
     await tx1.wait();
     console.log("✅ FlightFinderPro registered");
@@ -93,7 +94,8 @@ async function main() {
       ["application/json"],
       agent2Skills,
       agent2Payment,
-      "travel"
+      "travel",
+      "https://via.placeholder.com/150/e74c3c/ffffff?text=Hotel"
     );
     await tx2.wait();
     console.log("✅ HotelBookerPro registered");
@@ -130,7 +132,8 @@ async function main() {
       ["application/json"],
       agent3Skills,
       agent3Payment,
-      "travel"
+      "travel",
+      "https://via.placeholder.com/150/2ecc71/ffffff?text=Tourism"
     );
     await tx3.wait();
     console.log("✅ TourismGuide registered");

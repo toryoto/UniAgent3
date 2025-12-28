@@ -6,9 +6,32 @@ A2A、x402、ブロックチェーンを融合した AI エージェント向け
 
 ### AgentRegistry Contract
 - **Network**: Sepolia Testnet
-- **Address**: `0x814e90Cc586Ad01515C521C7e7bCF5560049550F`
+- **Address**: `0x1a4Ec58FE22aFe2624eaE8B5085aeBf85BCEB4e3`
 - **Deployer**: `0x25b61126EED206F6470533C073DDC3B4157bb6d1`
-- **Etherscan**: https://sepolia.etherscan.io/address/0x814e90Cc586Ad01515C521C7e7bCF5560049550F
+- **Etherscan**: https://sepolia.etherscan.io/address/0x1a4Ec58FE22aFe2624eaE8B5085aeBf85BCEB4e3
+
+### Registered Sample Agents (with images)
+
+#### 1. FlightFinderPro
+- **Agent ID**: `0x0bddd164b1ba44c2b7bd2960cce576de2de93bd1da0b5621d6b8ffcffa91b75e`
+- **Category**: travel
+- **Price**: 0.01 USDC per call
+- **Description**: 最安値フライト検索エージェント
+- **Image**: Blue placeholder
+
+#### 2. HotelBookerPro
+- **Agent ID**: `0x70fc477d5b587eed5078b44c890bae89e6497d5b1b9e115074eddbb3eb46dd0e`
+- **Category**: travel
+- **Price**: 0.015 USDC per call
+- **Description**: ホテル予約エージェント
+- **Image**: Red placeholder
+
+#### 3. TourismGuide
+- **Agent ID**: `0xc1de1b2fcec91001afacbf4acc007ff0b96e84c2f9c7ca785cba05102234b0fc`
+- **Category**: travel
+- **Price**: 0.02 USDC per call
+- **Description**: 観光ガイドエージェント
+- **Image**: Green placeholder
 
 ## 技術スタック
 

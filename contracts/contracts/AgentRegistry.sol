@@ -40,6 +40,7 @@ contract AgentRegistry {
         PaymentInfo payment;
         
         string category;
+        string imageUrl;
     }
 
     struct Transaction {
@@ -119,6 +120,7 @@ contract AgentRegistry {
      * @param skills Array of agent skills
      * @param payment Payment information for x402
      * @param category Agent category
+     * @param imageUrl Agent image URL
      */
     function registerAgent(
         bytes32 agentId,
@@ -130,7 +132,8 @@ contract AgentRegistry {
         string[] memory defaultOutputModes,
         Skill[] memory skills,
         PaymentInfo memory payment,
-        string memory category
+        string memory category,
+        string memory imageUrl
     ) external {
         require(!_agentExists[agentId], "AgentRegistry: agent already exists");
         require(bytes(name).length > 0, "AgentRegistry: name required");
@@ -149,6 +152,7 @@ contract AgentRegistry {
         agent.createdAt = block.timestamp;
         agent.category = category;
         agent.payment = payment;
+        agent.imageUrl = imageUrl;
 
         for (uint256 i = 0; i < defaultInputModes.length; i++) {
             agent.defaultInputModes.push(defaultInputModes[i]);
@@ -175,6 +179,7 @@ contract AgentRegistry {
      * @param url New URL (empty string to keep current)
      * @param version New version (empty string to keep current)
      * @param payment New payment info (zero address to keep current)
+     * @param imageUrl New image URL (empty string to keep current)
      */
     function updateAgent(
         bytes32 agentId,
@@ -182,7 +187,8 @@ contract AgentRegistry {
         string memory description,
         string memory url,
         string memory version,
-        PaymentInfo memory payment
+        PaymentInfo memory payment,
+        string memory imageUrl
     ) external onlyAgentOwner(agentId) agentExists(agentId) {
         AgentCard storage agent = agentCards[agentId];
 
@@ -201,6 +207,9 @@ contract AgentRegistry {
         if (payment.receiverAddress != address(0)) {
             require(payment.pricePerCall > 0, "AgentRegistry: price must be greater than 0");
             agent.payment = payment;
+        }
+        if (bytes(imageUrl).length > 0) {
+            agent.imageUrl = imageUrl;
         }
 
         emit AgentUpdated(agentId, msg.sender);
