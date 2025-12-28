@@ -14,6 +14,7 @@ import { WagmiProvider } from '@privy-io/wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { config } from '@/lib/blockchain/wagmi';
 import { ReactNode, useState } from 'react';
+import { sepolia } from 'viem/chains';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -43,19 +44,18 @@ export function Providers({ children }: ProvidersProps) {
       appId={privyAppId}
       config={{
         appearance: {
-          theme: 'light',
-          accentColor: '#676FFF',
-          logo: '/logo.svg',
+          theme: 'dark',
+          accentColor: '#8B5CF6',
+          logo: 'https://auth.privy.io/logos/privy-logo.png',
         },
-        loginMethods: ['email', 'google'],
+        loginMethods: ['email', 'google', 'wallet'],
         embeddedWallets: {
           ethereum: {
             createOnLogin: 'users-without-wallets',
           },
-          solana: {
-            createOnLogin: 'users-without-wallets',
-          },
         },
+        defaultChain: sepolia,
+        supportedChains: [sepolia],
       }}
     >
       <QueryClientProvider client={queryClient}>
