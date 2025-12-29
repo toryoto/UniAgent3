@@ -28,7 +28,7 @@ export function Sidebar() {
     <div className="flex h-screen w-64 flex-col border-r border-slate-700 bg-slate-900">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-slate-700 px-6">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={authenticated ? '/chat' : '/'} className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
             <span className="text-lg font-bold text-white">U3</span>
           </div>

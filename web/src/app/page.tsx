@@ -1,11 +1,21 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { usePrivy } from '@privy-io/react-auth';
 import { Bot, Search, Shield, Zap, ArrowRight, Github, Twitter } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function HomePage() {
-  const { authenticated, login } = usePrivy();
+  const router = useRouter();
+
+  const { authenticated, ready, login } = usePrivy();
+
+  useEffect(() => {
+    if (!ready) return;
+    if (!authenticated) return;
+    router.replace('/chat');
+  }, [ready, authenticated, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">

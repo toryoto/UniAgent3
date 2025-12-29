@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { Bot, Wallet, LayoutDashboard, MessageSquare, History } from 'lucide-react';
+import { usePrivy } from '@privy-io/react-auth';
 
 export function Header() {
+  const { authenticated } = usePrivy();
+
   return (
     <header className="border-b bg-white">
       <nav className="mx-auto flex max-w-7xl items-center justify-between p-4">
         <div className="flex items-center gap-2">
           <Bot className="h-8 w-8 text-blue-600" />
-          <Link href="/" className="text-xl font-bold">
+          <Link href={authenticated ? '/chat' : '/'} className="text-xl font-bold">
             Agent Marketplace
           </Link>
         </div>

@@ -26,7 +26,26 @@ jobs:
           cache: 'npm'
 
       - name: Install workspace dependencies
-        run: npm ci
+        run: |
+          # Monorepo: ネストした lockfile があると workspace root 推定や依存解決が不安定になる
+          if [[ -f web/package-lock.json || -f contracts/package-lock.json ]]; then
+            echo "❌ Nested package-lock.json detected. Keep a single lockfile at repo root."
+            echo " - web/package-lock.json: $(test -f web/package-lock.json && echo exists || echo missing)"
+            echo " - contracts/package-lock.json: $(test -f contracts/package-lock.json && echo exists || echo missing)"
+            exit 1
+          fi
+
+          # lightningcss 等の platform/optional 依存を落とさない
+          # さらに、ネイティブバイナリ配置に install scripts が必要なケースがあるため明示的に有効化
+          npm ci --include=optional --ignore-scripts=false
+
+      - name: Debug npm config (optional/ignore-scripts)
+        run: |
+          echo "npm: $(npm --version)"
+          echo "node: $(node --version)"
+          npm config get ignore-scripts || true
+          npm config get omit || true
+          npm config get optional || true
 
       - name: Run ESLint
         run: npm run lint --workspace=web
@@ -46,7 +65,20 @@ jobs:
           cache: 'npm'
 
       - name: Install workspace dependencies
-        run: npm ci
+        run: |
+          if [[ -f web/package-lock.json || -f contracts/package-lock.json ]]; then
+            echo "❌ Nested package-lock.json detected. Keep a single lockfile at repo root."
+            exit 1
+          fi
+          npm ci --include=optional --ignore-scripts=false
+
+      - name: Debug npm config (optional/ignore-scripts)
+        run: |
+          echo "npm: $(npm --version)"
+          echo "node: $(node --version)"
+          npm config get ignore-scripts || true
+          npm config get omit || true
+          npm config get optional || true
 
       - name: Run type check
         run: npm run type-check --workspace=web
@@ -66,7 +98,20 @@ jobs:
           cache: 'npm'
 
       - name: Install workspace dependencies
-        run: npm ci
+        run: |
+          if [[ -f web/package-lock.json || -f contracts/package-lock.json ]]; then
+            echo "❌ Nested package-lock.json detected. Keep a single lockfile at repo root."
+            exit 1
+          fi
+          npm ci --include=optional --ignore-scripts=false
+
+      - name: Debug npm config (optional/ignore-scripts)
+        run: |
+          echo "npm: $(npm --version)"
+          echo "node: $(node --version)"
+          npm config get ignore-scripts || true
+          npm config get omit || true
+          npm config get optional || true
 
       - name: Build project
         run: npm run build --workspace=web
@@ -95,7 +140,20 @@ jobs:
           cache: 'npm'
 
       - name: Install workspace dependencies
-        run: npm ci
+        run: |
+          if [[ -f web/package-lock.json || -f contracts/package-lock.json ]]; then
+            echo "❌ Nested package-lock.json detected. Keep a single lockfile at repo root."
+            exit 1
+          fi
+          npm ci --include=optional --ignore-scripts=false
+
+      - name: Debug npm config (optional/ignore-scripts)
+        run: |
+          echo "npm: $(npm --version)"
+          echo "node: $(node --version)"
+          npm config get ignore-scripts || true
+          npm config get omit || true
+          npm config get optional || true
 
       - name: Run tests
         run: npm test --workspace=web --if-present
