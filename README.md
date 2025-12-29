@@ -53,7 +53,11 @@ A2A、x402、ブロックチェーンを融合した AI エージェント向け
 - `web/`: Next.js アプリケーション（独立した Next.js プロジェクト）
 - ルート: npm workspaces で各プロジェクトを管理
 
-各プロジェクトは独立した`package.json`と`node_modules`を持ち、ルートから一括管理できます。
+各プロジェクトは独立した`package.json`を持ちますが、依存関係は **npm workspaces** により
+原則として **ルートの `package-lock.json` に集約**して管理します（CIもこの前提です）。
+
+重要: **`web/` や `contracts/` 配下で `npm install` / `npm ci` を実行しないでください**。
+（サブディレクトリに `package-lock.json` が生成され、ロックファイルが二重管理になって混乱します）
 
 ## セットアップ
 
@@ -129,6 +133,9 @@ npm run lint:fix
 # 型チェック
 npm run type-check
 ```
+
+補足: 上の「個別」コマンドはディレクトリ移動後に実行していますが、依存関係のインストール自体は
+**ルートで `npm install` / `npm ci` を実行**する運用を推奨します。
 
 ## プロジェクト構造
 
