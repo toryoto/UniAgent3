@@ -55,7 +55,7 @@ async function main() {
   if (network.chainId !== 31337n) {
     // Not localhost
     console.log('\n⏳ Waiting for block confirmations...');
-    await agentRegistry.deploymentTransaction()?.wait(5);
+    await agentRegistry.deploymentTransaction()?.wait(2);
     console.log('✅ Confirmed!');
 
     console.log('\n📋 To verify the contract on Etherscan, run:');

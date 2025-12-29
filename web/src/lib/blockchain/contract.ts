@@ -5,7 +5,7 @@
  */
 
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, CHAIN, RPC_URL } from './config';
+import { CONTRACT_ADDRESSES, RPC_URL } from './config';
 import AgentRegistryArtifact from './AgentRegistry.json';
 import type { AgentCard, Transaction } from '../types';
 
@@ -13,10 +13,7 @@ import type { AgentCard, Transaction } from '../types';
 export const AGENT_REGISTRY_ABI = AgentRegistryArtifact.abi;
 
 export function getProvider(): ethers.JsonRpcProvider {
-  return new ethers.JsonRpcProvider(RPC_URL, {
-    chainId: CHAIN.id,
-    name: CHAIN.name,
-  });
+  return new ethers.JsonRpcProvider(RPC_URL);
 }
 
 export function getAgentRegistryContract(
@@ -31,10 +28,10 @@ export function getAgentRegistryContract(
 }
 
 export function parseAgentCard(onChainData: any): AgentCard {
-  // 平均評価を計算（オンチェーンでは整数、100倍されている）
+  // 平均評価を計算
   const averageRating =
     onChainData.ratingCount > 0
-      ? Number(onChainData.totalRatings) / Number(onChainData.ratingCount) / 100
+      ? Number(onChainData.totalRatings) / Number(onChainData.ratingCount)
       : 0;
 
   return {
@@ -63,6 +60,7 @@ export function parseAgentCard(onChainData: any): AgentCard {
       chain: onChainData.payment.chain,
     },
     category: onChainData.category,
+    imageUrl: onChainData.imageUrl,
   };
 }
 

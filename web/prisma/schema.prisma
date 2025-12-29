@@ -83,3 +83,21 @@ model McpSession {
   @@index([startedAt])
   @@map("mcp_sessions")
 }
+
+/// On-chain AgentCard のキャッシュ（Alchemy Webhookで同期）
+model AgentCache {
+  agentId          String   @id @map("agent_id") @db.VarChar(66)
+  owner            String?  @map("owner") @db.VarChar(42)
+  category         String?  @map("category") @db.VarChar(64)
+  isActive         Boolean? @map("is_active")
+  agentCard        Json     @map("agent_card")
+  lastSyncedBlock  Int      @default(0) @map("last_synced_block")
+  lastSyncedLogIdx Int      @default(0) @map("last_synced_log_idx")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([category])
+  @@index([owner])
+  @@index([isActive])
+  @@map("agent_cache")
+}

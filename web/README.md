@@ -64,7 +64,12 @@ cp .env.local.example .env.local
 - `NEXT_PUBLIC_PRIVY_APP_ID`: PrivyアプリケーションID
 - `NEXT_PUBLIC_AGENT_REGISTRY_ADDRESS`: AgentRegistryコントラクトアドレス
 - `NEXT_PUBLIC_USDC_ADDRESS`: USDCトークンアドレス (Base Sepolia)
+- `NEXT_PUBLIC_CHAIN`: チェーン選択（`sepolia` / `base-sepolia` / `base`）。未設定時は `sepolia`
+- `NEXT_PUBLIC_RPC_URL`: RPCエンドポイント（任意、未設定ならチェーンのデフォルトを使用）
+- `RPC_URL`: サーバー用RPC（Webhookなどサーバー処理向け。`NEXT_PUBLIC_RPC_URL` より優先）
 - `CLAUDE_API_KEY`: Claude API Key (サーバーサイドのみ)
+- `ALCHEMY_WEBHOOK_SIGNING_KEY`: Alchemy Webhook 署名検証用キー（設定すると検証が必須）
+- `ALCHEMY_WEBHOOK_DISABLE_SIGNATURE_VERIFY`: `true` の場合、署名検証をスキップ（開発用）
 
 ### 3. 開発サーバーの起動
 
