@@ -53,6 +53,48 @@ export interface AgentCard {
 }
 
 // ============================================================================
+// API DTO Types (JSON-safe)
+// ============================================================================
+
+/**
+ * DB（AgentCache.agentCard）やAPIレスポンスで扱う、JSON安全なAgentCard DTO。
+ * - BigInt は string で表現
+ * - UI向けに averageRating / pricePerCallUsdc を付与
+ */
+export interface AgentCardDto {
+  agentId: string;
+  name: string;
+  description: string;
+  url: string;
+  version?: string;
+  defaultInputModes?: string[];
+  defaultOutputModes?: string[];
+  skills?: A2ASkill[];
+
+  owner?: string;
+  isActive?: boolean;
+  createdAt?: string; // unix seconds (stringified)
+
+  totalRatings?: string;
+  ratingCount?: string;
+  averageRating: number;
+
+  payment?: {
+    tokenAddress?: string;
+    receiverAddress?: string;
+    pricePerCall?: string; // USDC 6 decimals integer as string
+    pricePerCallUsdc: number;
+    chain?: string;
+  };
+
+  category?: string;
+  imageUrl?: string;
+
+  // UI用（将来: on-chain tx count を集計して埋める）
+  ratingCountDisplay: number;
+}
+
+// ============================================================================
 // Transaction Types
 // ============================================================================
 
@@ -174,7 +216,7 @@ export interface ApiResponse<T> {
 }
 
 export interface DiscoveryApiResponse {
-  agents: AgentCard[];
+  agents: AgentCardDto[];
   total: number;
 }
 
