@@ -140,79 +140,90 @@ function parseOnChainAgent(onChainData: any): Omit<DiscoveredAgent, 'endpoint' |
  * メイン: エージェント検索
  */
 export async function discoverAgents(input: DiscoverAgentsInput): Promise<DiscoverAgentsOutput> {
-  const { category, skillName, maxPrice, minRating } = input;
+  try {
+    const { category, skillName, maxPrice, minRating } = input;
 
-  // Providerとコントラクト初期化
-  const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const contract = new ethers.Contract(
-    CONTRACT_ADDRESSES.AGENT_REGISTRY,
-    AGENT_REGISTRY_ABI,
-    provider
-  );
+    console.log('[discoverAgents] Input:', JSON.stringify(input));
 
-  // オンチェーンからAgentCard取得
-  let agentIds: string[];
-
-  if (category) {
-    // カテゴリ指定時はアクティブなエージェントのみ取得
-    agentIds = await contract.getActiveAgentsByCategory(category);
-  } else {
-    // カテゴリ指定なしは全エージェントを取得
-    agentIds = await contract.getAllAgentIds();
-  }
-
-  if (agentIds.length === 0) {
-    return { agents: [], total: 0, source: 'on-chain' };
-  }
-
-  // 各AgentCardを取得
-  const agentCardsPromises = agentIds.map((id) => contract.getAgentCard(id));
-  const onChainAgents = await Promise.all(agentCardsPromises);
-
-  // パースとフィルタリング
-  let parsedAgents = onChainAgents.map(parseOnChainAgent).filter((agent) => agent.isActive);
-
-  // スキル名フィルタ
-  if (skillName) {
-    const lowerSkillName = skillName.toLowerCase();
-    parsedAgents = parsedAgents.filter((agent) =>
-      agent.skills.some(
-        (skill) =>
-          skill.name.toLowerCase().includes(lowerSkillName) ||
-          skill.description.toLowerCase().includes(lowerSkillName)
-      )
+    // Providerとコントラクト初期化
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const contract = new ethers.Contract(
+      CONTRACT_ADDRESSES.AGENT_REGISTRY,
+      AGENT_REGISTRY_ABI,
+      provider
     );
-  }
 
-  // 価格フィルタ
-  if (typeof maxPrice === 'number') {
-    parsedAgents = parsedAgents.filter((agent) => agent.price <= maxPrice);
-  }
+    // オンチェーンからAgentCard取得
+    let agentIds: string[];
 
-  // 評価フィルタ
-  if (typeof minRating === 'number') {
-    parsedAgents = parsedAgents.filter((agent) => agent.rating >= minRating);
-  }
+    if (category) {
+      // カテゴリ指定時はアクティブなエージェントのみ取得
+      agentIds = await contract.getActiveAgentsByCategory(category);
+    } else {
+      // カテゴリ指定なしは全エージェントを取得
+      agentIds = await contract.getAllAgentIds();
+    }
 
-  // .well-known/agent.jsonから追加情報を取得（並列処理）
-  const enrichedAgentsPromises = parsedAgents.map(async (agent): Promise<DiscoveredAgent> => {
-    const agentJsonInfo = await fetchAgentJson(agent.url);
+    if (agentIds.length === 0) {
+      return { agents: [], total: 0, source: 'on-chain' };
+    }
+
+    // 各AgentCardを取得
+    const agentCardsPromises = agentIds.map((id) => contract.getAgentCard(id));
+    const onChainAgents = await Promise.all(agentCardsPromises);
+
+    // パースとフィルタリング
+    let parsedAgents = onChainAgents.map(parseOnChainAgent).filter((agent) => agent.isActive);
+
+    // スキル名フィルタ
+    if (skillName) {
+      const lowerSkillName = skillName.toLowerCase();
+      parsedAgents = parsedAgents.filter((agent) =>
+        agent.skills.some(
+          (skill) =>
+            skill.name.toLowerCase().includes(lowerSkillName) ||
+            skill.description.toLowerCase().includes(lowerSkillName)
+        )
+      );
+    }
+
+    // 価格フィルタ
+    if (typeof maxPrice === 'number') {
+      parsedAgents = parsedAgents.filter((agent) => agent.price <= maxPrice);
+    }
+
+    // 評価フィルタ
+    if (typeof minRating === 'number') {
+      parsedAgents = parsedAgents.filter((agent) => agent.rating >= minRating);
+    }
+
+    // .well-known/agent.jsonから追加情報を取得（並列処理）
+    const enrichedAgentsPromises = parsedAgents.map(async (agent): Promise<DiscoveredAgent> => {
+      const agentJsonInfo = await fetchAgentJson(agent.url);
+
+      return {
+        ...agent,
+        endpoint: agentJsonInfo?.endpoint || `${agent.url}/api/v1/agent`, // フォールバック
+        openapi: agentJsonInfo?.openapi,
+      };
+    });
+
+    const enrichedAgents = await Promise.all(enrichedAgentsPromises);
+
+    // 評価順でソート
+    enrichedAgents.sort((a, b) => b.rating - a.rating);
+
+    console.log(`[discoverAgents] Found ${enrichedAgents.length} agents`);
 
     return {
-      ...agent,
-      endpoint: agentJsonInfo?.endpoint || `${agent.url}/api/v1/agent`, // フォールバック
-      openapi: agentJsonInfo?.openapi,
+      agents: enrichedAgents,
+      total: enrichedAgents.length,
+      source: 'on-chain',
     };
-  });
-
-  const enrichedAgents = await Promise.all(enrichedAgentsPromises);
-
-  // 評価順でソート
-  enrichedAgents.sort((a, b) => b.rating - a.rating);
-
-  return {
-    agents: enrichedAgents,
-    total: enrichedAgents.length,
-    source: 'on-chain',
-  };
+  } catch (error) {
+    console.error('[discoverAgents] Error:', error);
+    throw new Error(
+      `エージェント検索に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
 }

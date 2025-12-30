@@ -8,8 +8,13 @@ import { useChat } from '@/lib/hooks/useChat';
 import type { ChatMessage, ToolCallLog } from '@/lib/types';
 
 export default function ChatPage() {
-  const { messages, input, setInput, sendMessage, abort, isStreaming, error, clearError } =
-    useChat();
+  const { messages, input, setInput, sendMessage, abort, isStreaming, error, clearError } = useChat(
+    {
+      mcpConfig: {
+        enabled: true,
+      },
+    }
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);

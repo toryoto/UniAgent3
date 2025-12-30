@@ -14,11 +14,9 @@ export const dynamic = 'force-dynamic';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
 
-// MCP Connector 用ベータヘッダー
-const MCP_BETA_HEADER = 'mcp-client-2025-04-04';
+const MCP_BETA_HEADER = 'mcp-client-2025-11-20';
 
-// MCP Server設定
-const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001/sse';
+const MCP_SERVER_URL = process.env.MCP_SERVER_URL || '';
 const MCP_SERVER_NAME = 'a2a-discovery';
 
 /**
@@ -98,8 +96,8 @@ function buildClaudeRequestBody(
 
   // MCP Connector設定
   if (mcpEnabled) {
-    // MCPサーバー設定
     const mcpServerUrl = mcpConfig?.servers?.[0]?.url || MCP_SERVER_URL;
+    console.log(`[Chat API] MCP Server URL: ${mcpServerUrl}`);
 
     body.mcp_servers = [
       {
@@ -109,14 +107,14 @@ function buildClaudeRequestBody(
       },
     ];
 
-    // 利用可能なツール設定
     body.tools = [
       {
-        type: 'mcp',
-        server_label: MCP_SERVER_NAME,
-        name: 'discover_agents',
+        type: 'mcp_toolset',
+        mcp_server_name: MCP_SERVER_NAME,
       },
     ];
+
+    console.log(`[Chat API] MCP configuration: server="${MCP_SERVER_NAME}", toolset=mcp_toolset`);
   }
 
   return body;
@@ -174,6 +172,9 @@ async function* streamClaudeResponse(
                 status: 'running',
                 timestamp: new Date(),
               };
+              console.log(
+                `[Chat API] Tool use started: ${currentToolCall.toolName} (${currentToolCall.id})`
+              );
               yield { type: 'tool_use_start', toolCall: currentToolCall };
             }
             break;
@@ -186,6 +187,12 @@ async function* streamClaudeResponse(
               if (text) yield { type: 'delta', content: text };
             } else if (delta?.type === 'input_json_delta' && currentToolCall) {
               const partial = (delta.partial_json as string) ?? '';
+              // ツール入力パラメータの蓄積
+              try {
+                currentToolCall.input = JSON.parse(currentToolCall.input + partial);
+              } catch {
+                // まだパースできない（部分的なJSON）
+              }
               yield {
                 type: 'tool_use_delta',
                 toolCallId: currentToolCall.id,
@@ -197,6 +204,10 @@ async function* streamClaudeResponse(
 
           case 'content_block_stop': {
             if (currentToolCall) {
+              console.log(
+                `[Chat API] Tool use completed: ${currentToolCall.toolName} (${currentToolCall.id})`
+              );
+              console.log('[Chat API] Tool input:', JSON.stringify(currentToolCall.input));
               // MCP Connectorがツール実行を自動処理
               yield { type: 'tool_use_end', toolCallId: currentToolCall.id, output: null };
               currentToolCall = null;
@@ -211,6 +222,10 @@ async function* streamClaudeResponse(
 
           case 'message_stop': {
             const usage = parsed.usage as Record<string, number> | undefined;
+            console.log(
+              '[Chat API] Stream completed',
+              usage ? `(tokens: ${usage.input_tokens}/${usage.output_tokens})` : ''
+            );
             yield {
               type: 'end',
               usage: usage
@@ -222,7 +237,9 @@ async function* streamClaudeResponse(
 
           case 'error': {
             const error = parsed.error as Record<string, unknown> | undefined;
-            yield { type: 'error', error: (error?.message as string) ?? 'Unknown error' };
+            const errorMsg = (error?.message as string) ?? 'Unknown error';
+            console.error('[Chat API] Claude API stream error:', errorMsg);
+            yield { type: 'error', error: errorMsg };
             break;
           }
         }
@@ -234,8 +251,11 @@ async function* streamClaudeResponse(
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[Chat API] Request received');
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    console.error('[Chat API] ANTHROPIC_API_KEY is not configured');
     return new Response(
       JSON.stringify({ success: false, error: 'ANTHROPIC_API_KEY is not configured' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -246,6 +266,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    console.error('[Chat API] Invalid JSON body');
     return new Response(JSON.stringify({ success: false, error: 'Invalid JSON body' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -253,6 +274,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
+    console.error('[Chat API] messages array is required');
     return new Response(JSON.stringify({ success: false, error: 'messages array is required' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -260,6 +282,7 @@ export async function POST(request: NextRequest) {
   }
 
   const mcpEnabled = body.mcpConfig?.enabled ?? false;
+  console.log(`[Chat API] MCP enabled: ${mcpEnabled}`);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -274,6 +297,7 @@ export async function POST(request: NextRequest) {
 
   const claudeBody = buildClaudeRequestBody(body.messages, body.mcpConfig);
 
+  console.log('[Chat API] Sending request to Claude API...');
   let claudeResponse: Response;
   try {
     claudeResponse = await fetch(ANTHROPIC_API_URL, {
@@ -282,6 +306,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(claudeBody),
     });
   } catch (e) {
+    console.error('[Chat API] Failed to connect to Claude API:', e);
     return new Response(
       JSON.stringify({ success: false, error: `Failed to connect to Claude API: ${e}` }),
       { status: 502, headers: { 'Content-Type': 'application/json' } }
@@ -290,11 +315,14 @@ export async function POST(request: NextRequest) {
 
   if (!claudeResponse.ok) {
     const errorText = await claudeResponse.text();
+    console.error(`[Chat API] Claude API error (${claudeResponse.status}):`, errorText);
     return new Response(
       JSON.stringify({ success: false, error: `Claude API error: ${errorText}` }),
       { status: claudeResponse.status, headers: { 'Content-Type': 'application/json' } }
     );
   }
+
+  console.log('[Chat API] Claude API response received, starting stream...');
 
   const reader = claudeResponse.body?.getReader();
   if (!reader) {

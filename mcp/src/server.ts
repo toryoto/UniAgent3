@@ -5,6 +5,7 @@
  * オンチェーンからAgentCardを取得し、.well-known/agent.jsonの情報を併せて返す
  */
 
+import 'dotenv/config';
 import { FastMCP } from 'fastmcp';
 import { z } from 'zod';
 import { discoverAgents } from './tools/discover-agents';
@@ -31,14 +32,28 @@ mcpServer.addTool({
     minRating: z.number().min(0).max(5).optional().describe('最小評価 (0-5)'),
   }),
   execute: async (args) => {
-    const result = await discoverAgents({
-      category: args.category,
-      skillName: args.skillName,
-      maxPrice: args.maxPrice,
-      minRating: args.minRating,
-    });
+    console.log('[discover_agents] Tool execution started');
+    console.log('[discover_agents] Parameters:', JSON.stringify(args));
 
-    return JSON.stringify(result, null, 2);
+    try {
+      const result = await discoverAgents({
+        category: args.category,
+        skillName: args.skillName,
+        maxPrice: args.maxPrice,
+        minRating: args.minRating,
+      });
+
+      console.log(`[discover_agents] Tool execution completed: ${result.total} agents found`);
+
+      console.log('[discover_agents] Response details:', JSON.stringify(result, null, 2));
+
+      return JSON.stringify(result);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[discover_agents] Tool execution failed:', errorMessage);
+      console.error('[discover_agents] Error details:', error);
+      throw new Error(`エージェント検索中にエラーが発生しました: ${errorMessage}`);
+    }
   },
 });
 
