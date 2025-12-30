@@ -5,8 +5,8 @@
  */
 
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, RPC_URL, USDC_DECIMALS } from '../../lib/blockchain/config';
-import { AGENT_REGISTRY_ABI } from '../../lib/blockchain/contract';
+import { CONTRACT_ADDRESSES, RPC_URL, USDC_DECIMALS } from '@agent-marketplace/shared';
+import { AGENT_REGISTRY_ABI } from '@agent-marketplace/shared/contract';
 
 // 入力パラメータ
 export interface DiscoverAgentsInput {
@@ -16,14 +16,12 @@ export interface DiscoverAgentsInput {
   minRating?: number;
 }
 
-// スキル情報
 export interface SkillInfo {
   id: string;
   name: string;
   description: string;
 }
 
-// agent.jsonから取得するエンドポイント情報
 export interface AgentEndpointInfo {
   url: string;
   spec?: string;
@@ -34,8 +32,8 @@ export interface DiscoveredAgent {
   agentId: string;
   name: string;
   description: string;
-  url: string; // Base URL (オンチェーン)
-  endpoint?: string; // A2Aエンドポイント (agent.jsonから)
+  url: string; // Base URL (onchainから取得)
+  endpoint?: string; // A2Aエンドポイント (.well-known/agent.jsonから取得)
   version: string;
   skills: SkillInfo[];
   price: number; // USDC
@@ -44,7 +42,7 @@ export interface DiscoveredAgent {
   category: string;
   owner: string;
   isActive: boolean;
-  openapi?: string; // OpenAPI仕様URL (agent.jsonから)
+  openapi?: string; // OpenAPI仕様URL (.well-known/agent.jsonから取得)
   imageUrl?: string;
 }
 
@@ -79,11 +77,15 @@ async function fetchAgentJson(baseUrl: string): Promise<{
       return null;
     }
 
-    const agentJson = await response.json();
+    const agentJson = (await response.json()) as any;
 
     // agent.json構造に応じてエンドポイント情報を抽出
     // 仕様書に基づく形式: { agent_id, endpoints: [{ url, spec }] }
-    if (agentJson.endpoints && Array.isArray(agentJson.endpoints) && agentJson.endpoints.length > 0) {
+    if (
+      agentJson.endpoints &&
+      Array.isArray(agentJson.endpoints) &&
+      agentJson.endpoints.length > 0
+    ) {
       return {
         endpoint: agentJson.endpoints[0].url,
         openapi: agentJson.endpoints[0].spec,
@@ -142,7 +144,11 @@ export async function discoverAgents(input: DiscoverAgentsInput): Promise<Discov
 
   // Providerとコントラクト初期化
   const provider = new ethers.JsonRpcProvider(RPC_URL);
-  const contract = new ethers.Contract(CONTRACT_ADDRESSES.AGENT_REGISTRY, AGENT_REGISTRY_ABI, provider);
+  const contract = new ethers.Contract(
+    CONTRACT_ADDRESSES.AGENT_REGISTRY,
+    AGENT_REGISTRY_ABI,
+    provider
+  );
 
   // オンチェーンからAgentCard取得
   let agentIds: string[];
@@ -164,9 +170,7 @@ export async function discoverAgents(input: DiscoverAgentsInput): Promise<Discov
   const onChainAgents = await Promise.all(agentCardsPromises);
 
   // パースとフィルタリング
-  let parsedAgents = onChainAgents
-    .map(parseOnChainAgent)
-    .filter((agent) => agent.isActive);
+  let parsedAgents = onChainAgents.map(parseOnChainAgent).filter((agent) => agent.isActive);
 
   // スキル名フィルタ
   if (skillName) {

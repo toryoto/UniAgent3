@@ -4,7 +4,9 @@
   "private": true,
   "workspaces": [
     "web",
-    "contracts"
+    "contracts",
+    "mcp",
+    "packages/shared"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=web",

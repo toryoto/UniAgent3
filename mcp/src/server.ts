@@ -68,7 +68,7 @@ export function startMcpServer(port: number = 3001) {
 }
 
 // CLIから直接実行された場合
-if (require.main === module) {
-  const port = parseInt(process.env.MCP_PORT || '3001', 10);
-  startMcpServer(port);
-}
+// ESMモジュールでは、import.meta.urlとprocess.argv[1]を比較するのは難しいため、
+// 環境変数で制御するか、別のエントリーポイントを使用することを推奨
+// ここでは常にエクスポートのみ行い、実行はpackage.jsonのスクリプトから行う
+
