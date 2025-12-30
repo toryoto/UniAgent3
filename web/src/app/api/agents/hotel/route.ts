@@ -7,8 +7,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withX402 } from 'x402-next';
+import { withX402, type RouteConfig } from 'x402-next';
 import { facilitator } from '@coinbase/x402';
+import type { Address } from 'viem';
 import { hotelAgent } from '@/lib/agents/hotel';
 
 export const runtime = 'nodejs';
@@ -53,7 +54,7 @@ const handler = async (req: NextRequest) => {
  */
 export const POST = withX402(
   handler,
-  hotelAgent.receiverAddress,
-  hotelAgent.getX402Config(),
+  hotelAgent.receiverAddress as Address,
+  hotelAgent.getX402Config() as RouteConfig,
   facilitator
 );

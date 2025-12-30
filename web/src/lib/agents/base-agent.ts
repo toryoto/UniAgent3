@@ -78,12 +78,12 @@ export abstract class BaseAgent {
    */
   getX402Config(): {
     price: string;
-    network: string;
+    network: 'base-sepolia';
     config: { description: string };
   } {
     return {
       price: this.price,
-      network: this.network,
+      network: 'base-sepolia' as const,
       config: { description: this.description },
     };
   }
