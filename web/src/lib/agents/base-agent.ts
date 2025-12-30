@@ -5,7 +5,7 @@
  * このクラスはエージェントメタデータとモックレスポンス生成のみを担当
  */
 
-import { USDC_SEPOLIA_ADDRESS, SEPOLIA_NETWORK_ID } from '@/lib/x402/constants';
+import { USDC_BASE_SEPOLIA_ADDRESS, BASE_SEPOLIA_NETWORK_ID } from '@/lib/x402/constants';
 
 /**
  * Dummy Agent基底クラス
@@ -61,12 +61,12 @@ export abstract class BaseAgent {
         },
       ],
       payment: {
-        tokenAddress: USDC_SEPOLIA_ADDRESS,
+        tokenAddress: USDC_BASE_SEPOLIA_ADDRESS,
         receiverAddress: this.receiverAddress,
         pricePerCall: this.pricePerCall,
         price: this.price,
         network: this.network,
-        chain: SEPOLIA_NETWORK_ID,
+        chain: BASE_SEPOLIA_NETWORK_ID,
       },
       defaultInputModes: ['text'],
       defaultOutputModes: ['text'],
