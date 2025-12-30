@@ -2,7 +2,7 @@
  * Chat API Route (SSE Streaming)
  *
  * Claude API を呼び出し、Server-Sent Events でストリーミングレスポンスを返す。
- * 将来の MCP Connector 統合を見越した拡張ポイントを用意。
+ * MCP Connector を使用してA2A Discovery MCPサーバーと連携。
  */
 
 import { NextRequest } from 'next/server';
@@ -14,8 +14,10 @@ export const dynamic = 'force-dynamic';
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const MODEL = 'claude-sonnet-4-20250514';
 
-// MCP Connector 用ベータヘッダー（将来有効化）
-// const MCP_BETA_HEADER = 'mcp-client-2025-04-04';
+const MCP_BETA_HEADER = 'mcp-client-2025-11-20';
+
+const MCP_SERVER_URL = process.env.MCP_SERVER_URL || '';
+const MCP_SERVER_NAME = 'a2a-discovery';
 
 /**
  * SSE エンコーダー
@@ -25,22 +27,51 @@ function encodeSSE(event: ChatSSEEvent): string {
 }
 
 /**
- * システムプロンプト（MCP統合前の基本動作）
+ * システムプロンプト
  */
-function getSystemPrompt(): string {
-  return `あなたは UniAgent3 の AI アシスタントです。
+function getSystemPrompt(mcpEnabled: boolean): string {
+  const basePrompt = `あなたは UniAgent3 の AI アシスタントです。
 ユーザーのタスクを支援し、必要に応じて外部エージェントを活用します。
 
 ## 基本動作
 - タスクを分解して計画を立ててから実行してください
-- 不明な点があれば確認してください
+- 不明な点があれば確認してください`;
 
-## 将来の機能（現在は準備中）
-- discover_agents: マーケットプレイスからエージェントを検索
-- execute_agent_capability: 外部エージェントを実行（x402決済含む）
-- record_transaction: トランザクションをオンチェーン記録
+  if (mcpEnabled) {
+    return `${basePrompt}
 
-現在はこれらの機能は準備中のため、一般的な質問への回答のみ行います。`;
+## 利用可能なツール
+
+### discover_agents
+ブロックチェーン上のAgentRegistryからエージェントを検索します。
+
+**使用例:**
+- カテゴリで検索: discover_agents(category: "travel")
+- スキル名で検索: discover_agents(skillName: "flight")
+- 価格フィルタ: discover_agents(maxPrice: 0.05)
+- 評価フィルタ: discover_agents(minRating: 4.0)
+- 複合検索: discover_agents(category: "travel", maxPrice: 0.1, minRating: 3.5)
+
+**返却情報:**
+- agentId: エージェントID
+- name: エージェント名
+- description: 説明
+- url: Base URL
+- endpoint: A2Aエンドポイント
+- skills: スキル一覧
+- price: 価格 (USDC)
+- rating: 評価 (0-5)
+- category: カテゴリ
+- openapi: OpenAPI仕様URL (存在する場合)
+
+ユーザーがエージェントを探している場合は、積極的にdiscover_agentsを使用してください。`;
+  }
+
+  return `${basePrompt}
+
+## 現在利用可能な機能
+一般的な質問への回答を行います。
+エージェント検索機能 (discover_agents) は別途MCPサーバーの起動が必要です。`;
 }
 
 /**
@@ -48,39 +79,43 @@ function getSystemPrompt(): string {
  */
 function buildClaudeRequestBody(
   messages: ChatApiRequest['messages'],
-  _mcpConfig?: ChatApiRequest['mcpConfig']
+  mcpConfig?: ChatApiRequest['mcpConfig']
 ): Record<string, unknown> {
+  const mcpEnabled = mcpConfig?.enabled ?? false;
+
   const body: Record<string, unknown> = {
     model: MODEL,
     max_tokens: 4096,
     stream: true,
-    system: getSystemPrompt(),
+    system: getSystemPrompt(mcpEnabled),
     messages: messages.map((m) => ({
       role: m.role,
       content: m.content,
     })),
   };
 
-  // ============================================================
-  // MCP Connector 拡張ポイント
-  // mcpConfig.enabled === true の場合、以下を追加:
-  // ============================================================
-  // if (mcpConfig?.enabled && mcpConfig.servers?.length) {
-  //   body.mcp_servers = mcpConfig.servers.map((s) => ({
-  //     type: s.type,
-  //     url: s.url,
-  //     name: s.name,
-  //     ...(s.authorization_token && { authorization_token: s.authorization_token }),
-  //   }));
-  //
-  //   if (mcpConfig.tools?.length) {
-  //     body.tools = mcpConfig.tools.map((t) => ({
-  //       type: t.type,
-  //       server_label: t.server_label,
-  //       tool_name: t.tool_name,
-  //     }));
-  //   }
-  // }
+  // MCP Connector設定
+  if (mcpEnabled) {
+    const mcpServerUrl = mcpConfig?.servers?.[0]?.url || MCP_SERVER_URL;
+    console.log(`[Chat API] MCP Server URL: ${mcpServerUrl}`);
+
+    body.mcp_servers = [
+      {
+        type: 'url',
+        url: mcpServerUrl,
+        name: MCP_SERVER_NAME,
+      },
+    ];
+
+    body.tools = [
+      {
+        type: 'mcp_toolset',
+        mcp_server_name: MCP_SERVER_NAME,
+      },
+    ];
+
+    console.log(`[Chat API] MCP configuration: server="${MCP_SERVER_NAME}", toolset=mcp_toolset`);
+  }
 
   return body;
 }
@@ -137,6 +172,9 @@ async function* streamClaudeResponse(
                 status: 'running',
                 timestamp: new Date(),
               };
+              console.log(
+                `[Chat API] Tool use started: ${currentToolCall.toolName} (${currentToolCall.id})`
+              );
               yield { type: 'tool_use_start', toolCall: currentToolCall };
             }
             break;
@@ -149,6 +187,12 @@ async function* streamClaudeResponse(
               if (text) yield { type: 'delta', content: text };
             } else if (delta?.type === 'input_json_delta' && currentToolCall) {
               const partial = (delta.partial_json as string) ?? '';
+              // ツール入力パラメータの蓄積
+              try {
+                currentToolCall.input = JSON.parse(currentToolCall.input + partial);
+              } catch {
+                // まだパースできない（部分的なJSON）
+              }
               yield {
                 type: 'tool_use_delta',
                 toolCallId: currentToolCall.id,
@@ -160,7 +204,11 @@ async function* streamClaudeResponse(
 
           case 'content_block_stop': {
             if (currentToolCall) {
-              // MCP Connector 統合時はここでツール実行結果を取得
+              console.log(
+                `[Chat API] Tool use completed: ${currentToolCall.toolName} (${currentToolCall.id})`
+              );
+              console.log('[Chat API] Tool input:', JSON.stringify(currentToolCall.input));
+              // MCP Connectorがツール実行を自動処理
               yield { type: 'tool_use_end', toolCallId: currentToolCall.id, output: null };
               currentToolCall = null;
             }
@@ -174,6 +222,10 @@ async function* streamClaudeResponse(
 
           case 'message_stop': {
             const usage = parsed.usage as Record<string, number> | undefined;
+            console.log(
+              '[Chat API] Stream completed',
+              usage ? `(tokens: ${usage.input_tokens}/${usage.output_tokens})` : ''
+            );
             yield {
               type: 'end',
               usage: usage
@@ -185,7 +237,9 @@ async function* streamClaudeResponse(
 
           case 'error': {
             const error = parsed.error as Record<string, unknown> | undefined;
-            yield { type: 'error', error: (error?.message as string) ?? 'Unknown error' };
+            const errorMsg = (error?.message as string) ?? 'Unknown error';
+            console.error('[Chat API] Claude API stream error:', errorMsg);
+            yield { type: 'error', error: errorMsg };
             break;
           }
         }
@@ -197,8 +251,11 @@ async function* streamClaudeResponse(
 }
 
 export async function POST(request: NextRequest) {
+  console.log('[Chat API] Request received');
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
+    console.error('[Chat API] ANTHROPIC_API_KEY is not configured');
     return new Response(
       JSON.stringify({ success: false, error: 'ANTHROPIC_API_KEY is not configured' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -209,6 +266,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    console.error('[Chat API] Invalid JSON body');
     return new Response(JSON.stringify({ success: false, error: 'Invalid JSON body' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -216,11 +274,15 @@ export async function POST(request: NextRequest) {
   }
 
   if (!Array.isArray(body.messages) || body.messages.length === 0) {
+    console.error('[Chat API] messages array is required');
     return new Response(JSON.stringify({ success: false, error: 'messages array is required' }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' },
     });
   }
+
+  const mcpEnabled = body.mcpConfig?.enabled ?? false;
+  console.log(`[Chat API] MCP enabled: ${mcpEnabled}`);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -228,15 +290,14 @@ export async function POST(request: NextRequest) {
     'anthropic-version': '2023-06-01',
   };
 
-  // ============================================================
-  // MCP Connector 拡張ポイント: ベータヘッダー追加
-  // ============================================================
-  // if (body.mcpConfig?.enabled) {
-  //   headers['anthropic-beta'] = MCP_BETA_HEADER;
-  // }
+  // MCP Connector有効時はベータヘッダーを追加
+  if (mcpEnabled) {
+    headers['anthropic-beta'] = MCP_BETA_HEADER;
+  }
 
   const claudeBody = buildClaudeRequestBody(body.messages, body.mcpConfig);
 
+  console.log('[Chat API] Sending request to Claude API...');
   let claudeResponse: Response;
   try {
     claudeResponse = await fetch(ANTHROPIC_API_URL, {
@@ -245,6 +306,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(claudeBody),
     });
   } catch (e) {
+    console.error('[Chat API] Failed to connect to Claude API:', e);
     return new Response(
       JSON.stringify({ success: false, error: `Failed to connect to Claude API: ${e}` }),
       { status: 502, headers: { 'Content-Type': 'application/json' } }
@@ -253,11 +315,14 @@ export async function POST(request: NextRequest) {
 
   if (!claudeResponse.ok) {
     const errorText = await claudeResponse.text();
+    console.error(`[Chat API] Claude API error (${claudeResponse.status}):`, errorText);
     return new Response(
       JSON.stringify({ success: false, error: `Claude API error: ${errorText}` }),
       { status: claudeResponse.status, headers: { 'Content-Type': 'application/json' } }
     );
   }
+
+  console.log('[Chat API] Claude API response received, starting stream...');
 
   const reader = claudeResponse.body?.getReader();
   if (!reader) {

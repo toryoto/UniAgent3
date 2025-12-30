@@ -1,31 +1,22 @@
 /**
- * Agent Registry Contract Utilities
+ * Agent Registry Contract Utilities (Web)
  *
  * ethers.jsを使用したスマートコントラクトとのやり取り
+ * 共通機能は @agent-marketplace/shared から取得
  */
 
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, RPC_URL } from './config';
-import AgentRegistryArtifact from './AgentRegistry.json';
 import type { AgentCard, Transaction } from '../types';
 
-// ABIの取得
-export const AGENT_REGISTRY_ABI = AgentRegistryArtifact.abi;
+// 共通機能をインポート
+import {
+  AGENT_REGISTRY_ABI,
+  getProvider,
+  getAgentRegistryContract,
+} from '@agent-marketplace/shared/contract';
 
-export function getProvider(): ethers.JsonRpcProvider {
-  return new ethers.JsonRpcProvider(RPC_URL);
-}
-
-export function getAgentRegistryContract(
-  signerOrProvider?: ethers.Signer | ethers.Provider
-): ethers.Contract {
-  const providerOrSigner = signerOrProvider || getProvider();
-  return new ethers.Contract(
-    CONTRACT_ADDRESSES.AGENT_REGISTRY,
-    AGENT_REGISTRY_ABI,
-    providerOrSigner
-  );
-}
+// 共通機能を再エクスポート
+export { AGENT_REGISTRY_ABI, getProvider, getAgentRegistryContract };
 
 export function parseAgentCard(onChainData: any): AgentCard {
   // 平均評価を計算
