@@ -23,8 +23,7 @@ const USDC_ADDRESS = process.env.USDC_ADDRESS || '0x036CbD53842c5426634e7929541e
 const CHAIN_ID = 84532; // Base Sepolia
 
 // x402 Facilitator
-const X402_FACILITATOR_URL =
-  process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
+const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
 
 interface X402PaymentRequired {
   x402Version: number;
@@ -140,9 +139,10 @@ async function createX402PaymentHeader(
   };
 
   // Privy経由でEIP-712署名
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const signResult = await privyClient.walletApi.ethereum.signTypedData({
     walletId,
-    typedData: typedData as any, // Privy SDK型との互換性のため
+    typedData: typedData as any,
   });
 
   const signature = signResult.signature;
@@ -239,9 +239,7 @@ async function executeAgentImpl(input: ExecuteAgentInput): Promise<ExecuteAgentR
 
     let paymentInfo: X402PaymentRequired;
     try {
-      paymentInfo = JSON.parse(
-        Buffer.from(paymentInfoHeader, 'base64').toString('utf-8')
-      );
+      paymentInfo = JSON.parse(Buffer.from(paymentInfoHeader, 'base64').toString('utf-8'));
     } catch {
       // ヘッダーがbase64でない場合は直接JSONとして解析
       paymentInfo = JSON.parse(paymentInfoHeader);

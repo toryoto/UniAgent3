@@ -105,7 +105,9 @@ ${message}
     // メッセージからログを抽出
     for (const msg of result.messages) {
       if (msg._getType() === 'ai') {
-        const aiMsg = msg as any;
+        const aiMsg = msg as {
+          tool_calls?: Array<{ name: string; args: Record<string, unknown> }>;
+        };
 
         // ツール呼び出しをログ
         if (aiMsg.tool_calls && aiMsg.tool_calls.length > 0) {
@@ -126,9 +128,10 @@ ${message}
       }
 
       if (msg._getType() === 'tool') {
-        const toolMsg = msg as any;
+        // LangChainのToolMessage型にはcontentプロパティがある
+        const toolMsg = msg as { content: string };
         try {
-          const parsed = JSON.parse(toolMsg.content);
+          const parsed = JSON.parse(toolMsg.content) as { paymentAmount?: number };
           if (parsed.paymentAmount) {
             totalCost += parsed.paymentAmount;
             logger.payment.success(`Payment: $${parsed.paymentAmount} USDC`);
@@ -142,7 +145,9 @@ ${message}
     // 最終レスポンスを取得
     const lastMessage = result.messages[result.messages.length - 1];
     const finalResponse =
-      lastMessage._getType() === 'ai' ? (lastMessage as any).content : 'タスクが完了しました。';
+      lastMessage._getType() === 'ai'
+        ? (lastMessage as { content: string }).content
+        : 'タスクが完了しました。';
 
     stepCounter++;
     logStep(stepCounter, 'llm', 'Agent execution completed');

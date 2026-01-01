@@ -9,7 +9,9 @@
     "dev": "tsx watch src/server/index.ts",
     "build": "tsc",
     "start": "node dist/server/index.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@agent-marketplace/shared": "file:../packages/shared",
@@ -28,6 +30,9 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/node": "^20",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9",
     "tsx": "^4.21.0",
     "typescript": "^5"
   }

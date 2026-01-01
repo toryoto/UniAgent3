@@ -7,7 +7,9 @@
     "dev": "tsx src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@agent-marketplace/shared": "file:../packages/shared",
@@ -18,6 +20,9 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9",
     "tsx": "^4.21.0",
     "typescript": "^5"
   }

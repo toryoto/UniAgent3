@@ -5,7 +5,14 @@
  */
 
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, RPC_URL, USDC_DECIMALS } from '@agent-marketplace/shared';
+import {
+  CONTRACT_ADDRESSES,
+  RPC_URL,
+  USDC_DECIMALS,
+  type AgentJson,
+  type AgentCard,
+  type A2ASkill,
+} from '@agent-marketplace/shared';
 import { AGENT_REGISTRY_ABI } from '@agent-marketplace/shared/contract';
 
 // 入力パラメータ
@@ -77,12 +84,14 @@ async function fetchAgentJson(baseUrl: string): Promise<{
       return null;
     }
 
-    const agentJson = (await response.json()) as any;
+    const agentJson = (await response.json()) as
+      | AgentJson
+      | { endpoint?: string; openapi?: string };
 
     // agent.json構造に応じてエンドポイント情報を抽出
     // 仕様書に基づく形式: { agent_id, endpoints: [{ url, spec }] }
     if (
-      agentJson.endpoints &&
+      'endpoints' in agentJson &&
       Array.isArray(agentJson.endpoints) &&
       agentJson.endpoints.length > 0
     ) {
@@ -94,8 +103,8 @@ async function fetchAgentJson(baseUrl: string): Promise<{
 
     // 旧形式のフォールバック: { endpoint, openapi }
     return {
-      endpoint: agentJson.endpoint,
-      openapi: agentJson.openapi,
+      endpoint: 'endpoint' in agentJson ? agentJson.endpoint : undefined,
+      openapi: 'openapi' in agentJson ? agentJson.openapi : undefined,
     };
   } catch (error) {
     console.warn(`Error fetching agent.json from ${baseUrl}:`, error);
@@ -106,7 +115,7 @@ async function fetchAgentJson(baseUrl: string): Promise<{
 /**
  * オンチェーンAgentCardをパースしてDiscoveredAgentに変換
  */
-function parseOnChainAgent(onChainData: any): Omit<DiscoveredAgent, 'endpoint' | 'openapi'> {
+function parseOnChainAgent(onChainData: AgentCard): Omit<DiscoveredAgent, 'endpoint' | 'openapi'> {
   const totalRatings = Number(onChainData.totalRatings || 0);
   const ratingCount = Number(onChainData.ratingCount || 0);
   const averageRating = ratingCount > 0 ? totalRatings / ratingCount : 0;
@@ -121,7 +130,7 @@ function parseOnChainAgent(onChainData: any): Omit<DiscoveredAgent, 'endpoint' |
     description: onChainData.description,
     url: onChainData.url,
     version: onChainData.version,
-    skills: (onChainData.skills || []).map((skill: any) => ({
+    skills: (onChainData.skills || []).map((skill: A2ASkill) => ({
       id: skill.id,
       name: skill.name,
       description: skill.description,
