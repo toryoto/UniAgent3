@@ -6,7 +6,7 @@
 
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import type { DiscoveredAgent } from '@agent-marketplace/shared';
+import type { DiscoveredAgent, A2ASkill } from '@agent-marketplace/shared';
 import { logger } from '../utils/logger.js';
 
 const MCP_SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:3001/mcp';
@@ -105,7 +105,7 @@ export const discoverAgentsTool = tool(
         price: agent.price,
         rating: agent.rating,
         category: agent.category,
-        skills: agent.skills.map((s) => s.name),
+        skills: agent.skills.map((s: A2ASkill) => s.name),
       }));
 
       return JSON.stringify({

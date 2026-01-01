@@ -1,5 +1,5 @@
 /**
- * UniAgent3 Core Agent
+ * Paygent X
  *
  * LangChain.jsを使用したReActエージェント実装
  * - discover_agents: MCPサーバー経由でエージェントを検索
@@ -142,9 +142,7 @@ ${message}
     // 最終レスポンスを取得
     const lastMessage = result.messages[result.messages.length - 1];
     const finalResponse =
-      lastMessage._getType() === 'ai'
-        ? (lastMessage as any).content
-        : 'タスクが完了しました。';
+      lastMessage._getType() === 'ai' ? (lastMessage as any).content : 'タスクが完了しました。';
 
     stepCounter++;
     logStep(stepCounter, 'llm', 'Agent execution completed');
