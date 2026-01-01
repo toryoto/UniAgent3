@@ -6,6 +6,7 @@
     "web",
     "contracts",
     "mcp",
+    "agent",
     "packages/shared"
   ],
   "scripts": {

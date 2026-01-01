@@ -1,0 +1,34 @@
+{
+  "name": "@agent-marketplace/agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/server/index.ts",
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agent-marketplace/shared": "file:../packages/shared",
+    "@langchain/anthropic": "^0.3.20",
+    "@langchain/core": "^0.3.40",
+    "@langchain/langgraph": "^0.2.60",
+    "@privy-io/server-auth": "^1.18.5",
+    "chalk": "^5.4.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "viem": "^2.23.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/node": "^20",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
+}
