@@ -2,19 +2,29 @@
 
 import { AppLayout } from '@/components/layout/app-layout';
 import { AuthGuard } from '@/components/auth/auth-guard';
-import { Send, Square, Loader2, Bot, User, AlertCircle, Wrench } from 'lucide-react';
-import { useRef, useEffect } from 'react';
-import { useChat } from '@/lib/hooks/useChat';
-import type { ChatMessage, ToolCallLog } from '@/lib/types';
+import { Send, Loader2, Bot, User, AlertCircle, Wrench, DollarSign } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
+import { usePrivy } from '@privy-io/react-auth';
+import { useAgentChat, type AgentChatMessage } from '@/lib/hooks/useAgentChat';
+import type { ExecutionLogEntry } from '@agent-marketplace/shared';
+
+// デフォルトの最大予算 (USDC)
+const DEFAULT_MAX_BUDGET = 5.0;
 
 export default function ChatPage() {
-  const { messages, input, setInput, sendMessage, abort, isStreaming, error, clearError } = useChat(
-    {
-      mcpConfig: {
-        enabled: true,
-      },
-    }
-  );
+  const { user } = usePrivy();
+  const [maxBudget, setMaxBudget] = useState(DEFAULT_MAX_BUDGET);
+
+  // walletId と walletAddress を取得
+  // PoCでは user.id を walletId として使用（実際にはPrivy Server Walletの設定が必要）
+  const walletId = user?.id || '';
+  const walletAddress = user?.wallet?.address || '';
+
+  const { messages, input, setInput, sendMessage, isLoading, error, clearError } = useAgentChat({
+    walletId,
+    walletAddress,
+    maxBudget,
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -26,13 +36,13 @@ export default function ChatPage() {
 
   // 送信後に入力欄にフォーカス
   useEffect(() => {
-    if (!isStreaming) {
+    if (!isLoading) {
       inputRef.current?.focus();
     }
-  }, [isStreaming]);
+  }, [isLoading]);
 
   const handleSubmit = () => {
-    if (!input.trim() || isStreaming) return;
+    if (!input.trim() || isLoading) return;
     sendMessage();
   };
 
@@ -43,19 +53,54 @@ export default function ChatPage() {
     }
   };
 
+  // ウォレット未接続の場合の警告
+  const walletWarning = !walletAddress && (
+    <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-900/50 bg-yellow-950/30 p-4">
+      <AlertCircle className="mt-0.5 h-5 w-5 text-yellow-400" />
+      <div className="flex-1">
+        <p className="text-sm text-yellow-200">
+          ウォレットが接続されていません。決済機能を使用するにはウォレットを接続してください。
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <AppLayout>
       <AuthGuard>
         <div className="flex h-screen flex-col bg-slate-950">
           {/* Header */}
           <div className="border-b border-slate-800 bg-slate-900/50 px-8 py-4">
-            <h1 className="text-2xl font-bold text-white">Chat</h1>
-            <p className="text-sm text-slate-400">Claude AIエージェントと対話してタスクを実行</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-white">AI Agent Chat</h1>
+                <p className="text-sm text-slate-400">
+                  LangChain.js エージェントがタスクを実行します
+                </p>
+              </div>
+              {/* 予算設定 */}
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-400" />
+                <span className="text-sm text-slate-400">Max Budget:</span>
+                <input
+                  type="number"
+                  value={maxBudget}
+                  onChange={(e) => setMaxBudget(Number(e.target.value))}
+                  min={0.01}
+                  step={0.01}
+                  className="w-20 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-white"
+                />
+                <span className="text-sm text-slate-400">USDC</span>
+              </div>
+            </div>
           </div>
 
           {/* Chat Area */}
           <div className="flex-1 overflow-y-auto p-8">
             <div className="mx-auto max-w-4xl">
+              {/* Wallet Warning */}
+              {walletWarning}
+
               {/* Welcome Message (メッセージがない場合のみ表示) */}
               {messages.length === 0 && <WelcomeMessage />}
 
@@ -65,11 +110,11 @@ export default function ChatPage() {
                   <MessageBubble key={message.id} message={message} />
                 ))}
 
-                {/* Streaming indicator */}
-                {isStreaming && messages.length > 0 && (
+                {/* Loading indicator */}
+                {isLoading && messages.length > 0 && (
                   <div className="flex items-center gap-2 text-sm text-slate-400">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>応答中...</span>
+                    <span>エージェント実行中...</span>
                   </div>
                 )}
               </div>
@@ -104,29 +149,21 @@ export default function ChatPage() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="メッセージを入力..."
-                  disabled={isStreaming}
+                  placeholder="タスクを入力してください..."
+                  disabled={isLoading}
                   className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
                 />
-                {isStreaming ? (
-                  <button
-                    onClick={abort}
-                    className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-red-700"
-                  >
-                    <Square className="h-5 w-5" />
-                    停止
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!input.trim()}
-                    className="rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <Send className="h-5 w-5" />
-                  </button>
-                )}
+                <button
+                  onClick={handleSubmit}
+                  disabled={!input.trim() || isLoading}
+                  className="rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                </button>
               </div>
-              <p className="mt-2 text-xs text-slate-500">Enter で送信 • MCP ツール統合は準備中</p>
+              <p className="mt-2 text-xs text-slate-500">
+                Enter で送信 • Agent Service (port 3002) を起動してください
+              </p>
             </div>
           </div>
         </div>
@@ -138,23 +175,24 @@ export default function ChatPage() {
 function WelcomeMessage() {
   return (
     <div className="mb-8 rounded-2xl border border-purple-500/30 bg-purple-500/10 p-6">
-      <h2 className="mb-2 text-lg font-bold text-purple-300">👋 Welcome to UniAgent3!</h2>
+      <h2 className="mb-2 text-lg font-bold text-purple-300">Welcome to UniAgent3!</h2>
       <p className="mb-3 text-purple-200/80">
-        Claude AIエージェントがあなたのタスクを支援します。例えば、こんなことができます：
+        LangChain.jsエージェントがマーケットプレイス上の外部エージェントを発見・実行します：
       </p>
       <ul className="space-y-2 text-sm text-purple-200/70">
-        <li>• 「パリ3日間の旅行プランを作成して」</li>
-        <li>• 「東京の人気レストランを探して」</li>
-        <li>• 「最新のテクノロジートレンドを調査して」</li>
+        <li>1. discover_agents でエージェントを検索</li>
+        <li>2. 価格・評価を考慮して最適なエージェントを選択</li>
+        <li>3. x402決済付きでエージェントを実行</li>
+        <li>4. 結果を統合してお届け</li>
       </ul>
       <p className="mt-4 text-xs text-purple-300/60">
-        ※ MCP ツール統合（エージェント検索・実行・決済）は準備中です
+        例: 「travelカテゴリのエージェントを検索して」「パリ3日間の旅行プランを作成して」
       </p>
     </div>
   );
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message }: { message: AgentChatMessage }) {
   const isUser = message.role === 'user';
 
   return (
@@ -178,26 +216,35 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           ) : (
             <>
               <Bot className="h-4 w-4" />
-              AI Assistant
+              AI Agent
             </>
           )}
         </div>
 
         {/* Content */}
         <div className={`whitespace-pre-wrap ${isUser ? 'text-white' : 'text-slate-300'}`}>
-          {message.content || <span className="text-slate-500 italic">応答を生成中...</span>}
+          {message.content || <span className="text-slate-500 italic">実行中...</span>}
         </div>
 
-        {/* Tool Calls (アシスタントメッセージのみ) */}
-        {!isUser && message.metadata?.toolCalls && message.metadata.toolCalls.length > 0 && (
+        {/* Execution Log (アシスタントメッセージのみ) */}
+        {!isUser && message.executionLog && message.executionLog.length > 0 && (
           <div className="mt-4 space-y-2 border-t border-slate-700 pt-4">
             <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
               <Wrench className="h-3 w-3" />
-              ツール呼び出し
+              実行ログ
             </div>
-            {message.metadata.toolCalls.map((tc: ToolCallLog) => (
-              <ToolCallCard key={tc.id} toolCall={tc} />
+            {message.executionLog.map((entry, index) => (
+              <ExecutionLogCard key={index} entry={entry} />
             ))}
+          </div>
+        )}
+
+        {/* Total Cost */}
+        {!isUser && message.totalCost !== undefined && message.totalCost > 0 && (
+          <div className="mt-3 flex items-center gap-2 border-t border-slate-700 pt-3 text-sm">
+            <DollarSign className="h-4 w-4 text-green-400" />
+            <span className="text-slate-400">Total Cost:</span>
+            <span className="font-mono text-green-400">${message.totalCost.toFixed(4)} USDC</span>
           </div>
         )}
       </div>
@@ -205,50 +252,36 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-function ToolCallCard({ toolCall }: { toolCall: ToolCallLog }) {
-  const statusColors = {
-    pending: 'bg-slate-500',
-    running: 'bg-yellow-500',
-    success: 'bg-green-500',
-    failed: 'bg-red-500',
+function ExecutionLogCard({ entry }: { entry: ExecutionLogEntry }) {
+  const typeColors = {
+    llm: 'bg-purple-500',
+    logic: 'bg-blue-500',
+    payment: 'bg-green-500',
+    error: 'bg-red-500',
   };
 
-  const outputText = formatToolOutput(toolCall.output);
+  const typeLabels = {
+    llm: 'LLM',
+    logic: 'Logic',
+    payment: 'Payment',
+    error: 'Error',
+  };
 
   return (
     <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-3 text-xs">
       <div className="flex items-center gap-2">
-        <span className={`h-2 w-2 rounded-full ${statusColors[toolCall.status]}`} />
-        <span className="font-mono text-slate-300">{toolCall.toolName}</span>
-        <span className="text-slate-500">
-          {toolCall.status === 'running' && '実行中...'}
-          {toolCall.status === 'success' && '完了'}
-          {toolCall.status === 'failed' && '失敗'}
+        <span className={`h-2 w-2 rounded-full ${typeColors[entry.type]}`} />
+        <span className="font-mono text-slate-500">[Step {entry.step}]</span>
+        <span className="rounded bg-slate-700 px-1.5 py-0.5 text-slate-300">
+          {typeLabels[entry.type]}
         </span>
+        <span className="text-slate-300">{entry.action}</span>
       </div>
-      {toolCall.output != null ? (
-        <pre className="mt-2 overflow-x-auto text-slate-400">{outputText}</pre>
-      ) : null}
+      {entry.details && Object.keys(entry.details).length > 0 && (
+        <pre className="mt-2 overflow-x-auto text-slate-400">
+          {JSON.stringify(entry.details, null, 2)}
+        </pre>
+      )}
     </div>
   );
-}
-
-function formatToolOutput(output: unknown): string {
-  if (output == null) return '';
-  if (typeof output === 'string') return output;
-  if (typeof output === 'number' || typeof output === 'boolean') return String(output);
-  if (typeof output === 'bigint') return output.toString();
-  if (output instanceof Error) {
-    return output.stack ?? output.message;
-  }
-
-  try {
-    return JSON.stringify(
-      output,
-      (_key, value) => (typeof value === 'bigint' ? value.toString() : value),
-      2
-    );
-  } catch {
-    return String(output);
-  }
 }
