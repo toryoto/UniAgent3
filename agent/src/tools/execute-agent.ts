@@ -18,9 +18,8 @@ const privyClient = new PrivyClient(
   process.env.PRIVY_APP_SECRET || ''
 );
 
-// USDC Contract on Base Sepolia
 const USDC_ADDRESS = process.env.USDC_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
-const CHAIN_ID = 84532; // Base Sepolia
+const CHAIN_ID = 84532;
 
 // x402 Facilitator
 const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
@@ -139,7 +138,7 @@ async function createX402PaymentHeader(
   };
 
   // Privy経由でEIP-712署名
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const signResult = await privyClient.walletApi.ethereum.signTypedData({
     walletId,
     typedData: typedData as any,

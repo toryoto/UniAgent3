@@ -27,7 +27,7 @@ export default function ChatPage() {
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // 新しいメッセージが来たら自動スクロール
   useEffect(() => {
@@ -41,12 +41,24 @@ export default function ChatPage() {
     }
   }, [isLoading]);
 
+  // textareaの高さを自動調整
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
+    }
+  }, [input]);
+
   const handleSubmit = () => {
     if (!input.trim() || isLoading) return;
     sendMessage();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.nativeEvent.isComposing) {
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -143,27 +155,30 @@ export default function ChatPage() {
           <div className="border-t border-slate-800 bg-slate-900/50 p-6">
             <div className="mx-auto max-w-4xl">
               <div className="flex gap-4">
-                <input
+                <textarea
                   ref={inputRef}
-                  type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="タスクを入力してください..."
                   disabled={isLoading}
-                  className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                  rows={1}
+                  className="scrollbar-hide flex-1 resize-none overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 disabled:opacity-50"
+                  style={{ minHeight: '48px', maxHeight: '100px' }}
                 />
                 <button
                   onClick={handleSubmit}
                   disabled={!input.trim() || isLoading}
-                  className="rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="self-start rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
                 </button>
               </div>
-              <p className="mt-2 text-xs text-slate-500">
-                Enter で送信 • Agent Service (port 3002) を起動してください
-              </p>
+              <p className="mt-2 text-xs text-slate-500">Enter で送信、Shift+Enter で改行</p>
             </div>
           </div>
         </div>

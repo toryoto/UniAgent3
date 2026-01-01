@@ -13,7 +13,6 @@ import type { AgentRequest, AgentResponse, ExecutionLogEntry } from '@agent-mark
 import { discoverAgentsTool, executeAgentTool } from '../tools/index.js';
 import { logger, logStep, logSeparator } from '../utils/logger.js';
 
-// System prompt for the agent
 const SYSTEM_PROMPT = `あなたは UniAgent3 の AI エージェントです。
 ユーザーのタスクを達成するために、マーケットプレイス上の外部エージェントを発見・選択・実行します。
 
@@ -37,9 +36,6 @@ const SYSTEM_PROMPT = `あなたは UniAgent3 の AI エージェントです。
 最終的な結果は日本語で簡潔に報告してください。
 実行したエージェントと費用も含めてください。`;
 
-/**
- * エージェントを作成
- */
 function createAgent() {
   const model = new ChatAnthropic({
     model: 'claude-sonnet-4-20250514',
@@ -56,9 +52,6 @@ function createAgent() {
   return agent;
 }
 
-/**
- * エージェントを実行
- */
 export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
   const { message, walletId, walletAddress, maxBudget } = request;
   const executionLog: ExecutionLogEntry[] = [];

@@ -3,6 +3,8 @@
  *
  * useChatStream を利用して SSE イベントを受け取り、
  * メッセージ配列や UI 状態を管理する。
+ *
+ * このカスタムフックはシンプルなClaude API実行用
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

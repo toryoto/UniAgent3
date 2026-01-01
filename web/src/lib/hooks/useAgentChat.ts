@@ -2,6 +2,8 @@
  * useAgentChat - Agent Service用チャットフック
  *
  * /api/agent エンドポイントを呼び出し、エージェントの実行結果を取得する
+ *
+ * このカスタムフックはLangChainを使用したAgent endpoint実行用
  */
 
 import { useCallback, useMemo, useState } from 'react';
