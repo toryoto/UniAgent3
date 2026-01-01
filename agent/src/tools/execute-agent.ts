@@ -58,7 +58,7 @@ interface ExecuteAgentResult {
 async function fetchAgentJson(baseUrl: string): Promise<AgentJson | null> {
   try {
     const normalizedUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const agentJsonUrl = `${normalizedUrl}/.well-known/agent.json`;
+    const agentJsonUrl = `${normalizedUrl}`;
 
     logger.logic.info(`Fetching agent.json`, { url: agentJsonUrl });
 

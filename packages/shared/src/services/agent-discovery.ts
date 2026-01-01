@@ -41,7 +41,7 @@ async function fetchAgentJson(baseUrl: string): Promise<{
   try {
     // URLの正規化
     const normalizedUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-    const agentJsonUrl = `${normalizedUrl}/.well-known/agent.json`;
+    const agentJsonUrl = `${normalizedUrl}`;
 
     const response = await fetch(agentJsonUrl, {
       method: 'GET',
@@ -50,7 +50,9 @@ async function fetchAgentJson(baseUrl: string): Promise<{
     });
 
     if (!response.ok) {
-      console.warn(`[agent-discovery] Failed to fetch agent.json from ${agentJsonUrl}: ${response.status}`);
+      console.warn(
+        `[agent-discovery] Failed to fetch agent.json from ${agentJsonUrl}: ${response.status}`
+      );
       return null;
     }
 
