@@ -10,7 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withX402, type RouteConfig } from 'x402-next';
 import { facilitator } from '@coinbase/x402';
 import type { Address } from 'viem';
-import { tourismAgent } from '@/lib/agents/tourism';
+import { tourismAgent, type TourismSearchResult } from '@/lib/agents/tourism';
+import type { AgentJsonRpcRouteResponse } from '@/lib/x402/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,9 @@ export const dynamic = 'force-dynamic';
  * 観光情報検索ハンドラー
  * x402決済はwithX402ミドルウェアが処理
  */
-const handler = async (req: NextRequest) => {
+const handler = async (
+  req: NextRequest
+): Promise<NextResponse<AgentJsonRpcRouteResponse<TourismSearchResult>>> => {
   try {
     const body = await req.json();
     const params = body.params || {};

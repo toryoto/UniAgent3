@@ -32,3 +32,30 @@ export interface AgentJsonRpcResponse<T = unknown> {
     data?: unknown;
   };
 }
+
+/**
+ * Agent JSON-RPC Success Response
+ */
+export interface AgentJsonRpcSuccessResponse<T> {
+  jsonrpc: '2.0';
+  id: string | number | undefined;
+  result: T;
+}
+
+/**
+ * Agent JSON-RPC Error Response
+ */
+export interface AgentJsonRpcErrorResponse {
+  jsonrpc: '2.0';
+  error: {
+    code: number;
+    message: string;
+  };
+}
+
+/**
+ * Agent JSON-RPC Response (Success or Error)
+ */
+export type AgentJsonRpcRouteResponse<T> =
+  | AgentJsonRpcSuccessResponse<T>
+  | AgentJsonRpcErrorResponse;

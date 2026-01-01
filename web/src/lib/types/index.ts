@@ -160,7 +160,7 @@ export interface MCPToolExecuteAgentInput {
 
 export interface MCPToolExecuteAgentOutput {
   status: 'success' | 'failed';
-  result: any;
+  result: unknown;
   txHash?: string;
 }
 
