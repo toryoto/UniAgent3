@@ -3,12 +3,13 @@
  *
  * POST /api/agents/hotel - ホテル検索（x402決済対応）
  *
- * Coinbase x402 SDK を使用した標準実装
+ * @x402/next を使用した標準実装
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withX402, type RouteConfig } from 'x402-next';
-import { facilitator } from '@coinbase/x402';
+import { withX402 } from '@x402/next';
+import { x402ResourceServer, HTTPFacilitatorClient } from '@x402/core/server';
+import { registerExactEvmScheme } from '@x402/evm/exact/server';
 import type { Address } from 'viem';
 import { hotelAgent, type HotelSearchResult } from '@/lib/agents/hotel';
 import type { AgentJsonRpcRouteResponse } from '@/lib/x402/types';
@@ -16,18 +17,12 @@ import type { AgentJsonRpcRouteResponse } from '@/lib/x402/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * ホテル検索ハンドラー
- * x402決済はwithX402ミドルウェアが処理
- */
 const handler = async (
   req: NextRequest
 ): Promise<NextResponse<AgentJsonRpcRouteResponse<HotelSearchResult>>> => {
   try {
     const body = await req.json();
     const params = body.params || {};
-
-    // モックレスポンス生成
     const result = hotelAgent.generateMockResponse(params);
 
     return NextResponse.json({
@@ -50,14 +45,26 @@ const handler = async (
   }
 };
 
-/**
- * x402決済でラップされたPOSTハンドラー
- * - 決済なしのリクエスト → 402 Payment Required
- * - 有効な決済付きリクエスト → ハンドラー実行
- */
+const facilitatorClient = new HTTPFacilitatorClient({
+  url: 'https://x402.org/facilitator',
+});
+
+const server = new x402ResourceServer(facilitatorClient);
+registerExactEvmScheme(server);
+
 export const POST = withX402(
   handler,
-  hotelAgent.receiverAddress as Address,
-  hotelAgent.getX402Config() as RouteConfig,
-  facilitator
+  {
+    accepts: [
+      {
+        scheme: 'exact',
+        price: hotelAgent.price,
+        network: 'eip155:84532',
+        payTo: hotelAgent.receiverAddress as Address,
+      },
+    ],
+    description: hotelAgent.description,
+    mimeType: 'application/json',
+  },
+  server
 );
