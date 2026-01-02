@@ -2,23 +2,24 @@
 
 import { AppLayout } from '@/components/layout/app-layout';
 import { AuthGuard } from '@/components/auth/auth-guard';
-import { Send, Loader2, Bot, User, AlertCircle, Wrench, DollarSign } from 'lucide-react';
+import { Send, Loader2, Bot, User, AlertCircle, Wrench, DollarSign, Shield } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
 import { useAgentChat, type AgentChatMessage } from '@/lib/hooks/useAgentChat';
+import { useDelegatedWallet } from '@/lib/hooks/useDelegatedWallet';
 import type { ExecutionLogEntry } from '@agent-marketplace/shared';
+import Link from 'next/link';
 
 // デフォルトの最大予算 (USDC)
 const DEFAULT_MAX_BUDGET = 5.0;
 
 export default function ChatPage() {
-  const { user } = usePrivy();
+  const { wallet, isLoading: isWalletLoading } = useDelegatedWallet();
   const [maxBudget, setMaxBudget] = useState(DEFAULT_MAX_BUDGET);
 
-  // walletId と walletAddress を取得
-  // PoCでは user.id を walletId として使用（実際にはPrivy Server Walletの設定が必要）
-  const walletId = user?.id || '';
-  const walletAddress = user?.wallet?.address || '';
+  // Privy embedded walletからwalletIdとwalletAddressを取得
+  // delegated walletの場合のみサーバー側で署名可能
+  const walletId = wallet?.walletId || '';
+  const walletAddress = wallet?.address || '';
 
   const { messages, input, setInput, sendMessage, isLoading, error, clearError } = useAgentChat({
     walletId,
@@ -65,8 +66,8 @@ export default function ChatPage() {
     }
   };
 
-  // ウォレット未接続の場合の警告
-  const walletWarning = !walletAddress && (
+  // ウォレット未接続またはdelegateされていない場合の警告
+  const walletWarning = !walletAddress ? (
     <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-900/50 bg-yellow-950/30 p-4">
       <AlertCircle className="mt-0.5 h-5 w-5 text-yellow-400" />
       <div className="flex-1">
@@ -75,7 +76,20 @@ export default function ChatPage() {
         </p>
       </div>
     </div>
-  );
+  ) : !wallet?.isDelegated ? (
+    <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-900/50 bg-yellow-950/30 p-4">
+      <Shield className="mt-0.5 h-5 w-5 text-yellow-400" />
+      <div className="flex-1">
+        <p className="text-sm text-yellow-200">
+          ウォレットがサーバーに委譲されていません。x402決済を使用するには{' '}
+          <Link href="/wallet" className="font-medium underline hover:text-yellow-100">
+            Walletページ
+          </Link>{' '}
+          でウォレットを委譲してください。
+        </p>
+      </div>
+    </div>
+  ) : null;
 
   return (
     <AppLayout>
