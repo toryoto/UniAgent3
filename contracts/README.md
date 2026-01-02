@@ -12,9 +12,9 @@
 
 ### USDC (Base Sepolia) - EIP-3009対応
 
-- **Address**: `0x057E5be041509feC1Ee5e3C7ba60c6D1f04Cd337` (最新デプロイ)
+- **Address**: `0x036CbD53842c5426634e7929541eC2318f3dCF7e` (最新デプロイ)
 - **Deployer**: `0x25b61126EED206F6470533C073DDC3B4157bb6d1`
-- **Block Explorer**: https://sepolia.basescan.org/address/0x057E5be041509feC1Ee5e3C7ba60c6D1f04Cd337
+- **Block Explorer**: https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e
 
 ### Sample Agents
 
