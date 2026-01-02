@@ -24,17 +24,27 @@ const CHAIN_ID = 84532;
 // x402 Facilitator
 const X402_FACILITATOR_URL = process.env.X402_FACILITATOR_URL || 'https://x402.org/facilitator';
 
-interface X402PaymentRequired {
-  x402Version: number;
-  scheme: string;
-  network: string;
-  payTo: string;
-  maxAmountRequired: string;
-  asset: string;
-  resource: string;
+/**
+ * x402 V2 Payment Required Response
+ */
+interface X402PaymentRequiredV2 {
+  x402Version: 2;
+  accepts: Array<{
+    scheme: string;
+    network: string;
+    price?: string;
+    amount?: string;
+    asset: string;
+    payTo: string;
+    maxTimeoutSeconds?: number;
+    extra?: {
+      name?: string;
+      version?: string;
+    };
+  }>;
+  resource?: string;
   description?: string;
   mimeType?: string;
-  facilitator?: string;
 }
 
 interface ExecuteAgentInput {
@@ -85,24 +95,32 @@ async function fetchAgentJson(baseUrl: string): Promise<AgentJson | null> {
 }
 
 /**
- * EIP-3009署名を作成してX-PAYMENTヘッダーを生成
+ * PAYMENT-REQUIREDヘッダーをパース (v2)
  */
-async function createX402PaymentHeader(
+function parsePaymentRequired(header: string): X402PaymentRequiredV2 {
+  const decoded = Buffer.from(header, 'base64').toString('utf-8');
+  return JSON.parse(decoded) as X402PaymentRequiredV2;
+}
+
+/**
+ * EIP-3009署名を作成してPAYMENT-SIGNATUREヘッダーを生成 (v2)
+ */
+async function createPaymentSignatureHeader(
   walletId: string,
   walletAddress: string,
-  paymentInfo: X402PaymentRequired
+  requirement: X402PaymentRequiredV2['accepts'][0]
 ): Promise<string> {
   logger.payment.info('Creating EIP-3009 signature via Privy', {
-    payTo: paymentInfo.payTo,
-    amount: paymentInfo.maxAmountRequired,
+    payTo: requirement.payTo,
+    amount: requirement.amount,
   });
 
   // nonce生成
   const nonce = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('hex')}`;
   const validAfter = 0;
-  const validBefore = Math.floor(Date.now() / 1000) + 3600; // 1時間有効
+  const validBefore = Math.floor(Date.now() / 1000) + 3600;
 
-  // EIP-712 Typed Data for TransferWithAuthorization
+  // EIP-712 Typed Data
   const typedData = {
     types: {
       EIP712Domain: [
@@ -129,8 +147,8 @@ async function createX402PaymentHeader(
     },
     message: {
       from: walletAddress as `0x${string}`,
-      to: paymentInfo.payTo as `0x${string}`,
-      value: BigInt(paymentInfo.maxAmountRequired),
+      to: requirement.payTo as `0x${string}`,
+      value: BigInt(requirement.amount || '0'),
       validAfter: BigInt(validAfter),
       validBefore: BigInt(validBefore),
       nonce: nonce as `0x${string}`,
@@ -138,25 +156,22 @@ async function createX402PaymentHeader(
   };
 
   // Privy経由でEIP-712署名
-
   const signResult = await privyClient.walletApi.ethereum.signTypedData({
     walletId,
-    typedData: typedData as any,
+    typedData: typedData,
   });
 
-  const signature = signResult.signature;
-
-  // X-PAYMENTペイロードを構築
+  // PAYMENT-SIGNATUREペイロード (v2)
   const payload = {
     x402Version: 2,
-    scheme: 'exact',
-    network: `eip155:${CHAIN_ID}`,
+    scheme: requirement.scheme,
+    network: requirement.network,
     payload: {
-      signature,
+      signature: signResult.signature,
       authorization: {
         from: walletAddress,
-        to: paymentInfo.payTo,
-        value: paymentInfo.maxAmountRequired,
+        to: requirement.payTo,
+        value: requirement.amount || '0',
         validAfter: validAfter.toString(),
         validBefore: validBefore.toString(),
         nonce,
@@ -165,18 +180,18 @@ async function createX402PaymentHeader(
   };
 
   const paymentHeader = Buffer.from(JSON.stringify(payload)).toString('base64');
-  logger.payment.success('Payment header created');
+  logger.payment.success('Payment signature header created');
 
   return paymentHeader;
 }
 
 /**
- * エージェントにA2Aリクエストを送信
+ * エージェントにA2Aリクエストを送信 (v2対応)
  */
 async function sendA2ARequest(
   endpoint: string,
   task: string,
-  paymentHeader?: string
+  paymentSignature?: string
 ): Promise<Response> {
   const request: JsonRpcRequest = {
     jsonrpc: '2.0',
@@ -194,8 +209,8 @@ async function sendA2ARequest(
     'Content-Type': 'application/json',
   };
 
-  if (paymentHeader) {
-    headers['X-PAYMENT'] = paymentHeader;
+  if (paymentSignature) {
+    headers['PAYMENT-SIGNATURE'] = paymentSignature;
   }
 
   return fetch(endpoint, {
@@ -207,7 +222,7 @@ async function sendA2ARequest(
 }
 
 /**
- * execute_agent ツール実装
+ * execute_agent ツール実装 (v2対応)
  */
 async function executeAgentImpl(input: ExecuteAgentInput): Promise<ExecuteAgentResult> {
   const { agentUrl, task, maxPrice, walletId, walletAddress } = input;
@@ -227,26 +242,53 @@ async function executeAgentImpl(input: ExecuteAgentInput): Promise<ExecuteAgentR
   if (response.status === 402) {
     logger.payment.info('Received HTTP 402 - Payment Required');
 
-    // 402レスポンスからpayment情報を取得
-    const paymentInfoHeader = response.headers.get('X-PAYMENT-REQUIRED');
-    if (!paymentInfoHeader) {
+    const paymentRequiredHeader = response.headers.get('PAYMENT-REQUIRED');
+    if (!paymentRequiredHeader) {
       return {
         success: false,
-        error: 'HTTP 402 received but no X-PAYMENT-REQUIRED header',
+        error: 'HTTP 402 received but no PAYMENT-REQUIRED header',
       };
     }
 
-    let paymentInfo: X402PaymentRequired;
+    let paymentRequired: X402PaymentRequiredV2;
     try {
-      paymentInfo = JSON.parse(Buffer.from(paymentInfoHeader, 'base64').toString('utf-8'));
-    } catch {
-      // ヘッダーがbase64でない場合は直接JSONとして解析
-      paymentInfo = JSON.parse(paymentInfoHeader);
+      paymentRequired = parsePaymentRequired(paymentRequiredHeader);
+    } catch (error) {
+      logger.payment.error('Failed to parse PAYMENT-REQUIRED header', { error });
+      return {
+        success: false,
+        error: 'Invalid PAYMENT-REQUIRED header format',
+      };
+    }
+
+    if (paymentRequired.x402Version !== 2) {
+      logger.payment.error('Unsupported x402 version', { version: paymentRequired.x402Version });
+    }
+
+    // 最初のaccept optionを選択 (複数ある場合は選択ロジックを追加可能)
+    const requirement = paymentRequired.accepts[0];
+    if (!requirement) {
+      return {
+        success: false,
+        error: 'No payment options available',
+      };
     }
 
     // 価格チェック
-    const amountUsdc = Number(paymentInfo.maxAmountRequired) / 1_000_000;
-    logger.payment.info('Payment info', { amount: amountUsdc, payTo: paymentInfo.payTo });
+    let amountUsdc = 0;
+    if (requirement.price) {
+      // "$0.01" 形式
+      amountUsdc = parseFloat(requirement.price.replace('$', ''));
+    } else if (requirement.amount) {
+      // トークン単位 (USDC: 6 decimals)
+      amountUsdc = Number(requirement.amount) / 1_000_000;
+    }
+
+    logger.payment.info('Payment required', {
+      amount: amountUsdc,
+      payTo: requirement.payTo,
+      network: requirement.network,
+    });
 
     if (amountUsdc > maxPrice) {
       logger.payment.error('Price exceeds maxPrice', { amountUsdc, maxPrice });
@@ -256,9 +298,13 @@ async function executeAgentImpl(input: ExecuteAgentInput): Promise<ExecuteAgentR
       };
     }
 
-    // 4. X-PAYMENTヘッダーを作成して再送
-    const paymentHeader = await createX402PaymentHeader(walletId, walletAddress, paymentInfo);
-    response = await sendA2ARequest(endpoint, task, paymentHeader);
+    // 4. PAYMENT-SIGNATUREヘッダーを作成して再送
+    const paymentSignature = await createPaymentSignatureHeader(
+      walletId,
+      walletAddress,
+      requirement
+    );
+    response = await sendA2ARequest(endpoint, task, paymentSignature);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -280,7 +326,7 @@ async function executeAgentImpl(input: ExecuteAgentInput): Promise<ExecuteAgentR
     };
   }
 
-  // 5. 通常のレスポンス（決済不要の場合）
+  // 5. 通常のレスポンス
   if (!response.ok) {
     const errorText = await response.text();
     return {
