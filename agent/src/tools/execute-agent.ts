@@ -2,6 +2,9 @@
  * Execute Agent Tool
  *
  * x402 v2決済を使用して外部エージェントを実行するLangChainツール
+ *
+ * Privy delegated walletを使用してユーザーのウォレットで署名を行う
+ * @see https://docs.privy.io/guide/server/wallets/delegated-actions
  */
 
 import { tool } from '@langchain/core/tools';
@@ -13,12 +16,73 @@ import { wrapFetchWithPayment } from '@x402/fetch';
 import type { Hex, TypedDataDefinition } from 'viem';
 import type { AgentJson, JsonRpcRequest, JsonRpcResponse } from '@agent-marketplace/shared';
 import { logger } from '../utils/logger.js';
+import fs from 'fs';
+import path from 'path';
 
-// Privy client initialization
+/**
+ * Authorization Keyを読み込む
+ *
+ * Privy delegated walletを使用するには、authorization keyが必要。
+ * 1. 環境変数 PRIVY_AUTHORIZATION_KEY から直接読み込む
+ * 2. 環境変数 PRIVY_AUTHORIZATION_KEY_PATH からファイルパスを取得して読み込む
+ * 3. デフォルトパス (../../../web/private.pem) から読み込む
+ */
+function loadAuthorizationKey(): string | undefined {
+  // 1. 環境変数から直接読み込む
+  if (process.env.PRIVY_AUTHORIZATION_KEY) {
+    logger.payment.info('Using authorization key from PRIVY_AUTHORIZATION_KEY environment variable');
+    return process.env.PRIVY_AUTHORIZATION_KEY;
+  }
+
+  // 2. 環境変数からファイルパスを取得して読み込む
+  const keyPath = process.env.PRIVY_AUTHORIZATION_KEY_PATH;
+  if (keyPath) {
+    try {
+      const key = fs.readFileSync(keyPath, 'utf-8').trim();
+      logger.payment.info('Loaded authorization key from file', { path: keyPath });
+      return key;
+    } catch (error) {
+      logger.payment.warn('Failed to load authorization key from path', {
+        path: keyPath,
+        error: error instanceof Error ? error.message : 'Unknown',
+      });
+    }
+  }
+
+  // 3. デフォルトパスから読み込む (web/private.pem)
+  const defaultPath = path.resolve(process.cwd(), '../web/private.pem');
+  try {
+    if (fs.existsSync(defaultPath)) {
+      const key = fs.readFileSync(defaultPath, 'utf-8').trim();
+      logger.payment.info('Loaded authorization key from default path', { path: defaultPath });
+      return key;
+    }
+  } catch (error) {
+    logger.payment.warn('Failed to load authorization key from default path', {
+      path: defaultPath,
+      error: error instanceof Error ? error.message : 'Unknown',
+    });
+  }
+
+  logger.payment.warn('No authorization key found - delegated wallet signing may not work');
+  return undefined;
+}
+
+// Privy client initialization with authorization key
+const authorizationKey = loadAuthorizationKey();
 const privyClient = new PrivyClient(
   process.env.PRIVY_APP_ID || '',
-  process.env.PRIVY_APP_SECRET || ''
+  process.env.PRIVY_APP_SECRET || '',
+  authorizationKey
+    ? {
+        authorizationPrivateKey: authorizationKey,
+      }
+    : undefined
 );
+
+logger.payment.info('Privy client initialized', {
+  hasAuthorizationKey: !!authorizationKey,
+});
 
 const CHAIN_ID = 84532; // Base Sepolia
 
@@ -41,6 +105,13 @@ interface ExecuteAgentResult {
 /**
  * PrivyベースのEIP-712署名アダプター
  * @x402/evmが期待するClientEvmSigner型に適合
+ *
+ * Privy delegated walletを使用して、ユーザーのembedded walletで
+ * サーバー側から署名を行う。
+ *
+ * 前提条件:
+ * 1. ユーザーがクライアント側でウォレットを委譲している (delegateWallet)
+ * 2. サーバーにauthorization keyが設定されている
  */
 class PrivyEIP712Signer {
   public address: `0x${string}`;
@@ -56,28 +127,53 @@ class PrivyEIP712Signer {
   /**
    * EIP-712署名（x402で使用）
    * @x402/evmはこのメソッドを呼び出して決済署名を作成
+   *
+   * Privy walletApi.ethereum.signTypedDataを使用して
+   * delegated walletで署名を行う
    */
   async signTypedData(typedData: TypedDataDefinition): Promise<Hex> {
-    logger.payment.info('Signing EIP-712 typed data via Privy', {
+    logger.payment.info('Signing EIP-712 typed data via Privy delegated wallet', {
       walletId: this.walletId,
+      walletAddress: this.address,
       primaryType: typedData.primaryType,
+      hasAuthorizationKey: !!authorizationKey,
     });
 
     try {
+      // Privy wallet APIを使用してdelegated walletで署名
+      // authorization keyが設定されている場合、自動的にリクエストに署名される
       const result = await this.privyClient.walletApi.ethereum.signTypedData({
         walletId: this.walletId,
         typedData: typedData as any,
       });
 
-      logger.payment.success('EIP-712 signature created', {
+      logger.payment.success('EIP-712 signature created via delegated wallet', {
         signature: `${result.signature.slice(0, 10)}...`,
+        walletId: this.walletId,
       });
 
       return result.signature as Hex;
     } catch (error) {
-      logger.payment.error('Failed to sign EIP-712 typed data', {
-        error: error instanceof Error ? error.message : 'Unknown',
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown';
+
+      // より詳細なエラーメッセージを提供
+      if (errorMessage.includes('authorization')) {
+        logger.payment.error('Authorization key error - check if PRIVY_AUTHORIZATION_KEY is set correctly', {
+          error: errorMessage,
+          walletId: this.walletId,
+        });
+      } else if (errorMessage.includes('delegated') || errorMessage.includes('permission')) {
+        logger.payment.error('Wallet not delegated - user must delegate wallet from client first', {
+          error: errorMessage,
+          walletId: this.walletId,
+        });
+      } else {
+        logger.payment.error('Failed to sign EIP-712 typed data', {
+          error: errorMessage,
+          walletId: this.walletId,
+        });
+      }
+
       throw error;
     }
   }

@@ -100,6 +100,8 @@ export const logger = {
       log('payment', 'info', msg, details),
     success: (msg: string, details?: Record<string, unknown>) =>
       log('payment', 'success', msg, details),
+    warn: (msg: string, details?: Record<string, unknown>) =>
+      log('payment', 'warn', msg, details),
     error: (msg: string, details?: Record<string, unknown>) =>
       log('payment', 'error', msg, details),
   },
