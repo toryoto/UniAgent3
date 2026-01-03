@@ -13,7 +13,7 @@ import type { AgentRequest, AgentResponse, ExecutionLogEntry } from '@agent-mark
 import { discoverAgentsTool, executeAgentTool } from '../tools/index.js';
 import { logger, logStep, logSeparator } from '../utils/logger.js';
 
-const SYSTEM_PROMPT = `あなたは UniAgent3 の AI エージェントです。
+const SYSTEM_PROMPT = `あなたは UniAgent の AI エージェントです。
 ユーザーのタスクを達成するために、マーケットプレイス上の外部エージェントを発見・選択・実行します。
 
 ## あなたの役割

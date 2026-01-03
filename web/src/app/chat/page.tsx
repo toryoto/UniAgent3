@@ -204,7 +204,7 @@ export default function ChatPage() {
 function WelcomeMessage() {
   return (
     <div className="mb-8 rounded-2xl border border-purple-500/30 bg-purple-500/10 p-6">
-      <h2 className="mb-2 text-lg font-bold text-purple-300">Welcome to UniAgent3!</h2>
+      <h2 className="mb-2 text-lg font-bold text-purple-300">Welcome to UniAgent!</h2>
       <p className="mb-3 text-purple-200/80">
         LangChain.jsエージェントがマーケットプレイス上の外部エージェントを発見・実行します：
       </p>

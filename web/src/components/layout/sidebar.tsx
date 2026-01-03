@@ -32,7 +32,7 @@ export function Sidebar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
             <span className="text-lg font-bold text-white">U3</span>
           </div>
-          <span className="text-xl font-bold text-white">UniAgent3</span>
+          <span className="text-xl font-bold text-white">UniAgent</span>
         </Link>
       </div>
 

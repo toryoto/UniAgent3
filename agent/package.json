@@ -19,6 +19,7 @@
     "@langchain/core": "^0.3.40",
     "@langchain/langgraph": "^0.2.60",
     "@privy-io/server-auth": "^1.18.5",
+    "@vercel/node": "^3.0.0",
     "@x402/core": "^2.1.0",
     "@x402/evm": "^2.1.0",
     "@x402/fetch": "^2.1.0",
@@ -35,6 +36,7 @@
     "@types/node": "^20",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "@vercel/node": "^3.0.0",
     "eslint": "^9",
     "tsx": "^4.21.0",
     "typescript": "^5"

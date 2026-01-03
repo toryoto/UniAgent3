@@ -1,7 +1,7 @@
 /**
  * @agent-marketplace/agent
  *
- * UniAgent3 Agent Service
+ * UniAgent Agent Service
  * LangChain.jsを使用したAIエージェントによるタスク実行
  */
 

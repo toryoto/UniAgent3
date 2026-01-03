@@ -1,6 +1,6 @@
 # @agent-marketplace/agent
 
-UniAgent3 Agent Service - LangChain.jsを使用したAIエージェント
+UniAgent Agent Service - LangChain.jsを使用したAIエージェント
 
 ## 概要
 
@@ -54,16 +54,16 @@ npm run start
 
 ## 環境変数
 
-| 変数名 | 説明 | 必須 |
-|--------|------|------|
-| ANTHROPIC_API_KEY | Claude API Key | ✅ |
-| MCP_SERVER_URL | MCPサーバーのURL | ✅ |
-| PRIVY_APP_ID | Privy App ID | ✅ |
-| PRIVY_APP_SECRET | Privy App Secret | ✅ |
-| RPC_URL | Base Sepolia RPC URL | ✅ |
-| USDC_ADDRESS | USDC Contract Address | ✅ |
-| X402_FACILITATOR_URL | x402 Facilitator URL | - |
-| AGENT_PORT | サーバーポート (default: 3002) | - |
+| 変数名               | 説明                           | 必須 |
+| -------------------- | ------------------------------ | ---- |
+| ANTHROPIC_API_KEY    | Claude API Key                 | ✅   |
+| MCP_SERVER_URL       | MCPサーバーのURL               | ✅   |
+| PRIVY_APP_ID         | Privy App ID                   | ✅   |
+| PRIVY_APP_SECRET     | Privy App Secret               | ✅   |
+| RPC_URL              | Base Sepolia RPC URL           | ✅   |
+| USDC_ADDRESS         | USDC Contract Address          | ✅   |
+| X402_FACILITATOR_URL | x402 Facilitator URL           | -    |
+| AGENT_PORT           | サーバーポート (default: 3002) | -    |
 
 ## API
 
@@ -72,6 +72,7 @@ npm run start
 エージェントを実行します。
 
 **Request:**
+
 ```json
 {
   "message": "パリ3日間の旅行プランを作成して",
@@ -81,6 +82,7 @@ npm run start
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,

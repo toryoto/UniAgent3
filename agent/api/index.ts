@@ -1,18 +1,19 @@
 /**
- * Agent Service - Express Server
+ * Vercel Serverless Function entry point for Agent Service
  *
- * UniAgent のエージェントサービスを提供するHTTPサーバー
+ * ExpressサーバーをVercelのServerless Functions形式でラップ
  */
 
-import 'dotenv/config';
+// @ts-ignore - @vercel/node is available at runtime in Vercel
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import cors from 'cors';
 import type { AgentRequest, AgentResponse } from '@agent-marketplace/shared';
-import { runAgent } from '../core/agent.js';
-import { logger, logSeparator } from '../utils/logger.js';
+import { runAgent } from '../src/core/agent.js';
+import { logger } from '../src/utils/logger.js';
 
+// Expressアプリを作成
 const app = express();
-const PORT = parseInt(process.env.AGENT_PORT || '3002', 10);
 
 // Middleware
 app.use(cors());
@@ -93,7 +94,7 @@ app.post('/api/agent', async (req, res) => {
 });
 
 /**
- * SSE Streaming endpoint (future enhancement)
+ * SSE Streaming endpoint
  *
  * POST /api/agent/stream
  */
@@ -143,13 +144,7 @@ app.post('/api/agent/stream', async (req, res) => {
   }
 });
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  logSeparator('UniAgent Agent Service');
-  logger.agent.success(`Server running on http://0.0.0.0:${PORT}`);
-  logger.agent.info('Endpoints:');
-  console.log('  - GET  /health       Health check');
-  console.log('  - POST /api/agent    Execute agent');
-  console.log('  - POST /api/agent/stream   Execute agent (SSE)');
-  logSeparator();
-});
+// Vercel Serverless Function handler
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  return app(req, res);
+}

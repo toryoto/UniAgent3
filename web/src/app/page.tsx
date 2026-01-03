@@ -26,7 +26,7 @@ export default function HomePage() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
               <span className="text-xl font-bold text-white">U3</span>
             </div>
-            <span className="text-2xl font-bold text-white">UniAgent3</span>
+            <span className="text-2xl font-bold text-white">UniAgent</span>
           </div>
 
           <div className="flex items-center gap-6">
@@ -225,7 +225,7 @@ export default function HomePage() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-purple-600 to-blue-600">
                 <span className="text-lg font-bold text-white">U3</span>
               </div>
-              <span className="text-xl font-bold text-white">UniAgent3</span>
+              <span className="text-xl font-bold text-white">UniAgent</span>
             </div>
             <div className="flex items-center gap-4">
               <Link href="https://github.com" target="_blank">
@@ -237,7 +237,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 text-center text-sm text-slate-500">
-            © 2025 UniAgent3. Built with A2A, x402, and ❤️
+            © 2025 UniAgent. Built with A2A, x402, and ❤️
           </div>
         </div>
       </footer>

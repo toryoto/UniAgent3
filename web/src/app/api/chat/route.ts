@@ -30,7 +30,7 @@ function encodeSSE(event: ChatSSEEvent): string {
  * システムプロンプト
  */
 function getSystemPrompt(mcpEnabled: boolean): string {
-  const basePrompt = `あなたは UniAgent3 の AI アシスタントです。
+  const basePrompt = `あなたは UniAgent の AI アシスタントです。
 ユーザーのタスクを支援し、必要に応じて外部エージェントを活用します。
 
 ## 基本動作
