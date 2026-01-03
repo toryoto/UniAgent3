@@ -12,7 +12,7 @@ import { runAgent } from '../core/agent.js';
 import { logger, logSeparator } from '../utils/logger.js';
 
 const app = express();
-const PORT = parseInt(process.env.AGENT_PORT || '3002', 10);
+const PORT = parseInt(process.env.PORT || '3002', 10);
 
 // Middleware
 app.use(cors());

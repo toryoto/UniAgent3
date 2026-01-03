@@ -1,7 +1,7 @@
 /**
  * Agent API Route
  *
- * Python Agent Serviceへのプロキシエンドポイント
+ * Agent Serviceへのプロキシエンドポイント
  * Next.jsからAgent Serviceにリクエストを転送
  */
 
@@ -27,17 +27,11 @@ export async function POST(request: NextRequest) {
 
     // Validation
     if (!message || typeof message !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'message is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'message is required' }, { status: 400 });
     }
 
     if (!walletId || typeof walletId !== 'string') {
-      return NextResponse.json(
-        { success: false, error: 'walletId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'walletId is required' }, { status: 400 });
     }
 
     if (!walletAddress || typeof walletAddress !== 'string') {
@@ -54,7 +48,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[Agent API] Forwarding to Agent Service', { message, walletId, walletAddress, maxBudget });
+    console.log('[Agent API] Forwarding to Agent Service', {
+      message,
+      walletId,
+      walletAddress,
+      maxBudget,
+    });
 
     // Forward to Agent Service
     const response = await fetch(`${AGENT_SERVICE_URL}/api/agent`, {
@@ -81,9 +80,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[Agent API] Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { success: false, error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
