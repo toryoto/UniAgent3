@@ -10,14 +10,21 @@ import { ethers } from 'hardhat';
 
 async function main() {
   // AgentRegistry contract address (Base Sepolia)
+  // Default: 0xe2B64700330af9e408ACb3A04a827045673311C1
   const AGENT_REGISTRY_ADDRESS =
     process.env.AGENT_REGISTRY_ADDRESS || '0xe2B64700330af9e408ACb3A04a827045673311C1';
+
+  // USDC address (Base Sepolia Testnet)
+  // Default: 0x036CbD53842c5426634e7929541eC2318f3dCF7e (managed in @agent-marketplace/shared)
+  const USDC_ADDRESS =
+    process.env.USDC_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
   // Base URL for agent.json endpoints (ローカルサーバー)
   const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
   console.log('Registering sample agents...');
   console.log('AgentRegistry address:', AGENT_REGISTRY_ADDRESS);
+  console.log('USDC address:', USDC_ADDRESS);
 
   const [deployer] = await ethers.getSigners();
   console.log('Using account:', deployer.address);
@@ -25,9 +32,6 @@ async function main() {
   // Get AgentRegistry contract
   const AgentRegistry = await ethers.getContractFactory('AgentRegistry');
   const agentRegistry = AgentRegistry.attach(AGENT_REGISTRY_ADDRESS);
-
-  // USDC address (Base Sepolia Testnet)
-  const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
 
   // Sample Agent 1: Flight Search Agent
   console.log('\n1️⃣ Registering FlightFinderPro...');

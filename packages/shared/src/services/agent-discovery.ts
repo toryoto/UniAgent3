@@ -6,7 +6,9 @@
  */
 
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, RPC_URL, USDC_DECIMALS } from '../config.js';
+import { CONTRACT_ADDRESSES } from '../contracts.js';
+import { RPC_URL } from '../config.js';
+import { USDC_DECIMALS } from '../utils/usdc.js';
 import { AGENT_REGISTRY_ABI } from '../contract.js';
 import type { AgentCard, AgentJson, A2ASkill, DiscoveredAgent } from '../types.js';
 

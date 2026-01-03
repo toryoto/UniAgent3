@@ -7,15 +7,33 @@
 
 import { base, baseSepolia } from 'viem/chains';
 
-// 共通設定をインポート
+// 共通設定をインポート (Contracts)
 export {
   CONTRACT_ADDRESSES,
-  RPC_URL,
+  USDC_BASE_SEPOLIA_ADDRESS,
+  USDC_SEPOLIA_ADDRESS,
+  USDC_ADDRESS,
+  AGENT_REGISTRY_ADDRESS,
+  AGENT_RECEIVER_ADDRESS,
+  SEPOLIA_NETWORK_ID,
+  BASE_SEPOLIA_NETWORK_ID,
+  X402_NETWORK,
+  AGENT_IDS,
+  AGENT_PRICES,
+} from '@agent-marketplace/shared';
+
+// 共通設定をインポート (USDC Utilities)
+export {
   USDC_DECIMALS,
   USDC_UNIT,
   parseUSDC,
   formatUSDCAmount,
+  parseUSDCString,
+  formatUSDCString,
 } from '@agent-marketplace/shared';
+
+// 共通設定をインポート (Config)
+export { RPC_URL } from '@agent-marketplace/shared';
 
 // 環境に応じたチェーン選択（Web固有）
 export const CHAIN = (() => {

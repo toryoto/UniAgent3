@@ -5,8 +5,8 @@
  */
 
 import { x402Client, x402HTTPClient } from '@x402/core/client';
+import { parseUSDCString } from '@agent-marketplace/shared';
 import type { PaymentRequiredData } from './types.js';
-import { USDC_DECIMALS } from './constants.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -30,9 +30,10 @@ export function decodePaymentRequiredHeader(header: string | null): PaymentRequi
 
 /**
  * 6 decimalsからUSDCに変換
+ * @deprecated Use parseUSDCString from @agent-marketplace/shared directly
  */
 export function convertAmountToUSDC(amount: string): string {
-  return (parseInt(amount, 10) / 10 ** USDC_DECIMALS).toFixed(6);
+  return parseUSDCString(amount).toFixed(6);
 }
 
 /**
@@ -57,7 +58,7 @@ export function validatePaymentAmount(
     return { isValid: true };
   }
 
-  const requiredAmount = parseInt(paymentAmount, 10) / 10 ** USDC_DECIMALS;
+  const requiredAmount = parseUSDCString(paymentAmount);
 
   if (requiredAmount > maxPrice) {
     return {
