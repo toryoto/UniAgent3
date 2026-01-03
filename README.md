@@ -326,12 +326,12 @@ npm start
 | HotelBookerPro  | `0x70fc477d5b587eed5078b44c890bae89e6497d5b1b9e115074eddbb3eb46dd0e` | travel   | 0.015 USDC |
 | TourismGuide    | `0xc1de1b2fcec91001afacbf4acc007ff0b96e84c2f9c7ca785cba05102234b0fc` | travel   | 0.02 USDC  |
 
-## 📄 ライセンス
+## ライセンス
 
-このプロジェクトのライセンス情報については、リポジトリのルートにある LICENSE ファイルを参照してください。
+このプロジェクトは [MIT License](LICENSE) の下で公開されています。
 
-## 🙏 謝辞
+## 謝辞
 
-このプロジェクトは以下の研究論文に基づいています：
+このプロジェクトは以下の論文に基づいています：
 
-- [Towards Multi-Agent Economies: Enhancing the A2A Protocol with Ledger-Anchored Identities and x402 Micropayments for AI Agents](spec/Towards%20Multi-Agent%20Economies- Enhancing the A2A Protocol with Ledger-Anchored Identities and x402 Micropayments for AI Agents.pdf)
+- [Towards Multi-Agent Economies: Enhancing the A2A Protocol with Ledger-Anchored Identities and x402 Micropayments for AI Agents](https://arxiv.org/html/2507.19550v1)
