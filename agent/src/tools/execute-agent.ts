@@ -15,9 +15,9 @@ import type { ExecuteAgentInput, ExecuteAgentResult } from './types.js';
 import { REQUEST_TIMEOUT_MS } from './constants.js';
 import { createX402FetchClient } from './x402-client.js';
 import { fetchAgentJson } from './agent-utils.js';
+import { parseUSDCString } from '@agent-marketplace/shared';
 import {
   decodePaymentRequiredHeader,
-  convertAmountToUSDC,
   getPaymentSettleResponse,
 } from './payment-utils.js';
 import { handle402Error, handlePaymentSettlementError } from './error-handlers.js';
@@ -103,7 +103,7 @@ async function processPaymentResponse(
 
   const transactionHash = paymentResponse.transaction;
   const paymentAmountUSDC = paymentRequiredDecoded?.accepts?.[0]?.amount
-    ? convertAmountToUSDC(paymentRequiredDecoded.accepts[0].amount)
+    ? parseUSDCString(paymentRequiredDecoded.accepts[0].amount).toFixed(6)
     : undefined;
 
   logger.payment.success('Payment completed', {

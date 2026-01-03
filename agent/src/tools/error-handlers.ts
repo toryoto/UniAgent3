@@ -4,8 +4,9 @@
  * x402決済エラーのハンドリング
  */
 
+import { parseUSDCString } from '@agent-marketplace/shared';
 import type { PaymentRequiredData } from './types.js';
-import { convertAmountToUSDC, validatePaymentAmount } from './payment-utils.js';
+import { validatePaymentAmount } from './payment-utils.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -74,7 +75,7 @@ function getPaymentErrorMessage(
 
   switch (error) {
     case 'insufficient_funds': {
-      const amountInUSDC = paymentAmount ? convertAmountToUSDC(paymentAmount) : 'unknown';
+      const amountInUSDC = paymentAmount ? parseUSDCString(paymentAmount).toFixed(6) : 'unknown';
       return {
         message: `Insufficient USDC balance. Required: ${amountInUSDC} USDC (${paymentAmount} in 6 decimals). Please ensure your wallet has enough USDC on ${paymentNetwork || 'Base Sepolia'}.`,
         details: {

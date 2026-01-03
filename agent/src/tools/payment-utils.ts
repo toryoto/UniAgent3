@@ -29,14 +29,6 @@ export function decodePaymentRequiredHeader(header: string | null): PaymentRequi
 }
 
 /**
- * 6 decimalsからUSDCに変換
- * @deprecated Use parseUSDCString from @agent-marketplace/shared directly
- */
-export function convertAmountToUSDC(amount: string): string {
-  return parseUSDCString(amount).toFixed(6);
-}
-
-/**
  * PAYMENT-RESPONSEヘッダーから決済情報を取得
  */
 export function getPaymentSettleResponse(
