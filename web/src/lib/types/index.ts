@@ -199,34 +199,6 @@ export type ChatSSEEvent =
   | { type: 'end'; usage?: { inputTokens: number; outputTokens: number } }
   | { type: 'error'; error: string };
 
-// ============================================================================
-// Agent SSE Event Types
-// ============================================================================
-
-export type AgentSSEEvent =
-  | { type: 'start'; data: { message: string; maxBudget: number } }
-  | {
-      type: 'log';
-      data: {
-        step: number;
-        type: 'llm' | 'logic' | 'payment' | 'error';
-        action: string;
-        timestamp: string | Date;
-        details?: Record<string, unknown>;
-      };
-    }
-  | { type: 'token'; data: { token: string; node?: string } }
-  | {
-      type: 'tool_call';
-      data: { step: number; tool: string; args: Record<string, unknown>; id?: string };
-    }
-  | { type: 'payment'; data: { amount: number; totalCost: number; remainingBudget: number } }
-  | {
-      type: 'end';
-      data: { success: boolean; totalCost: number; remainingBudget: number; message?: string };
-    }
-  | { type: 'error'; data: { error: string } };
-
 export interface UserBudgetSettings {
   dailyLimit: number; // USDC
   autoApproveThreshold: number; // USDC
