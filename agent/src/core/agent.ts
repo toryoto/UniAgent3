@@ -75,6 +75,50 @@ const SYSTEM_PROMPT = `あなたは UniAgent の AI エージェントです。
 - エージェントの評価と価格のバランスを考慮`;
 
 /**
+ * ユーザーメッセージを生成（コンテキスト情報を含む）
+ */
+function buildUserMessage(
+  message: string,
+  walletId: string,
+  walletAddress: string,
+  maxBudget: number,
+  currentCost: number
+): string {
+  return `
+## ユーザーのリクエスト
+${message}
+
+## コンテキスト
+- wallet_id: ${walletId}
+- wallet_address: ${walletAddress}
+- max_budget: $${maxBudget} USDC
+- 現在の予算使用額: $${currentCost} USDC
+- 残り予算: $${maxBudget - currentCost} USDC
+
+## 重要な指示
+エージェントを使う場合は execute_agent に以下を指定してください:
+- walletId: "${walletId}"
+- walletAddress: "${walletAddress}"
+- maxPrice: 残り予算の90%以下に設定してください（安全マージン）
+
+各エージェント実行の maxPrice の合計が max_budget を超えないように注意してください。
+予算が不足する場合は、より安価なエージェントを探すか、ユーザーに報告してください。
+`;
+}
+
+/**
+ * ツール実行結果から決済情報を抽出
+ */
+function extractPaymentInfo(content: string): number | null {
+  try {
+    const parsed = JSON.parse(content) as { paymentAmount?: number };
+    return parsed.paymentAmount ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * エージェントを実行（非ストリーミング）
  */
 export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
@@ -103,27 +147,7 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
       systemPrompt: SYSTEM_PROMPT,
     });
 
-    // ユーザーメッセージにコンテキストを追加
-    const userMessage = `
-## ユーザーのリクエスト
-${message}
-
-## コンテキスト
-- wallet_id: ${walletId}
-- wallet_address: ${walletAddress}
-- max_budget: $${maxBudget} USDC
-- 現在の予算使用額: $${totalCost} USDC
-- 残り予算: $${maxBudget - totalCost} USDC
-
-## 重要な指示
-エージェントを使う場合は execute_agent に以下を指定してください:
-- walletId: "${walletId}"
-- walletAddress: "${walletAddress}"
-- maxPrice: 残り予算の90%以下に設定してください（安全マージン）
-
-各エージェント実行の maxPrice の合計が max_budget を超えないように注意してください。
-予算が不足する場合は、より安価なエージェントを探すか、ユーザーに報告してください。
-`;
+    const userMessage = buildUserMessage(message, walletId, walletAddress, maxBudget, totalCost);
 
     logStep(stepCounter, 'llm', 'Starting ReAct agent loop');
 
@@ -158,17 +182,13 @@ ${message}
 
       if (msg._getType() === 'tool') {
         const toolMsg = msg as { content: string };
-        try {
-          const parsed = JSON.parse(toolMsg.content) as { paymentAmount?: number };
-          if (parsed.paymentAmount) {
-            totalCost += parsed.paymentAmount;
-            logger.payment.success(`Payment: $${parsed.paymentAmount} USDC`, {
-              totalCost,
-              remainingBudget: maxBudget - totalCost,
-            });
-          }
-        } catch {
-          // JSON解析失敗は無視
+        const paymentAmount = extractPaymentInfo(toolMsg.content);
+        if (paymentAmount !== null) {
+          totalCost += paymentAmount;
+          logger.payment.success(`Payment: $${paymentAmount} USDC`, {
+            totalCost,
+            remainingBudget: maxBudget - totalCost,
+          });
         }
       }
     }
@@ -225,7 +245,75 @@ ${message}
 }
 
 /**
+ * ストリーミング中のテキストコンテンツを処理
+ * @returns 更新されたfullContent
+ */
+function processTextBlock(
+  block: { type: string; text?: string },
+  nodeName: string | undefined,
+  fullContent: string
+): { newContent: string; event?: { type: 'token'; data: { token: string; node?: string } } } {
+  if (block.type === 'text' && block.text) {
+    return {
+      newContent: fullContent + block.text,
+      event: {
+        type: 'token',
+        data: {
+          token: block.text,
+          node: nodeName,
+        },
+      },
+    };
+  }
+  return { newContent: fullContent };
+}
+
+/**
+ * 完了したツールコールを処理
+ */
+function processCompletedToolCall(
+  block: { type: string; [key: string]: unknown },
+  stepCounter: number
+): { step: number; tool: string; args: Record<string, unknown>; id?: string } | null {
+  if (block.type === 'tool_call' && block.name && typeof block.name === 'string') {
+    const args =
+      typeof block.args === 'object' && block.args !== null && !Array.isArray(block.args)
+        ? (block.args as Record<string, unknown>)
+        : {};
+    return {
+      step: stepCounter + 1,
+      tool: block.name,
+      args,
+      id: typeof block.id === 'string' ? block.id : undefined,
+    };
+  }
+  return null;
+}
+
+/**
+ * ツール実行結果を処理（決済情報の抽出を含む）
+ */
+function processToolResult(
+  content: string,
+  totalCost: number,
+  maxBudget: number
+): { paymentAmount: number; totalCost: number; remainingBudget: number } | null {
+  const paymentAmount = extractPaymentInfo(content);
+  if (paymentAmount !== null) {
+    return {
+      paymentAmount,
+      totalCost: totalCost + paymentAmount,
+      remainingBudget: maxBudget - (totalCost + paymentAmount),
+    };
+  }
+  return null;
+}
+
+/**
  * エージェントを実行（ストリーミング）
+ *
+ * LangChain v1のstreamMode: 'messages'を使用して、トークン単位でストリーミング。
+ * ツールコールは完了時に一度だけ通知される。
  */
 export async function* runAgentStream(
   request: AgentRequest
@@ -237,31 +325,13 @@ export async function* runAgentStream(
   yield { type: 'start', data: { message, maxBudget } };
 
   try {
-    const model = await initChatModel('claude-sonnet-4-5-20250929', { temperature: 0 });
-
     const agent = createAgent({
-      model,
+      model: 'claude-sonnet-4-5-20250929',
       tools: [discoverAgentsTool, executeAgentTool],
       systemPrompt: SYSTEM_PROMPT,
     });
 
-    const userMessage = `
-## ユーザーのリクエスト
-${message}
-
-## コンテキスト
-- wallet_id: ${walletId}
-- wallet_address: ${walletAddress}
-- max_budget: $${maxBudget} USDC
-- 現在の予算使用額: $${totalCost} USDC
-- 残り予算: $${maxBudget - totalCost} USDC
-
-## 重要な指示
-エージェントを使う場合は execute_agent に以下を指定してください:
-- walletId: "${walletId}"
-- walletAddress: "${walletAddress}"
-- maxPrice: 残り予算の90%以下に設定してください（安全マージン）
-`;
+    const userMessage = buildUserMessage(message, walletId, walletAddress, maxBudget, totalCost);
 
     yield {
       type: 'log',
@@ -273,74 +343,72 @@ ${message}
       },
     };
 
-    const stream = await agent.stream({
-      messages: [{ role: 'user', content: userMessage }],
-    });
+    // LangChain v1: streamMode 'messages' - トークン単位でストリーミング
+    const stream = await agent.stream(
+      { messages: [{ role: 'user', content: userMessage }] },
+      { streamMode: 'messages' }
+    );
 
-    for await (const chunk of stream) {
-      // ストリームチャンクを処理
-      if (typeof chunk === 'object' && chunk !== null && 'messages' in chunk) {
-        const chunkRecord = chunk as Record<string, unknown>;
-        const messages = Array.isArray(chunkRecord.messages) ? chunkRecord.messages : [];
-        for (const msg of messages) {
-          if (typeof msg === 'object' && msg !== null && '_getType' in msg) {
-            const msgType = (msg as { _getType: () => string })._getType();
+    // 最終的な完全なテキストを蓄積
+    let fullContent = '';
 
-            if (msgType === 'ai') {
-              const aiMsg = msg as {
-                content?: string;
-                tool_calls?: Array<{ name: string; args: Record<string, unknown> }>;
-              };
+    for await (const [token, metadata] of stream) {
+      const nodeName = metadata.langgraph_node;
 
-              // テキストコンテンツをストリーミング
-              if (aiMsg.content) {
-                yield { type: 'content', data: { text: aiMsg.content } };
-              }
+      // content_blocks を取得（LangChain v1形式）
+      const contentBlocks = token.contentBlocks || [];
 
-              // ツール呼び出しを通知
-              if (aiMsg.tool_calls && aiMsg.tool_calls.length > 0) {
-                for (const toolCall of aiMsg.tool_calls) {
-                  stepCounter++;
-                  yield {
-                    type: 'tool_call',
-                    data: {
-                      step: stepCounter,
-                      tool: toolCall.name,
-                      args: toolCall.args,
-                    },
-                  };
-                }
-              }
-            }
+      for (const block of contentBlocks) {
+        // テキストトークンのストリーミング（リアルタイム表示）
+        const textResult = processTextBlock(block, nodeName, fullContent);
+        fullContent = textResult.newContent;
+        if (textResult.event) {
+          yield textResult.event;
+        }
 
-            if (msgType === 'tool') {
-              const toolMsg = msg as unknown as { content: string };
-              try {
-                const parsed = JSON.parse(toolMsg.content) as {
-                  paymentAmount?: number;
-                  success?: boolean;
-                };
+        // 完了したツールコールの処理
+        const toolCall = processCompletedToolCall(block, stepCounter);
+        if (toolCall) {
+          stepCounter++;
+          yield {
+            type: 'tool_call',
+            data: {
+              step: toolCall.step,
+              tool: toolCall.tool,
+              args: toolCall.args,
+              id: toolCall.id,
+            },
+          };
+        }
+      }
 
-                // 決済情報を処理
-                if (parsed.paymentAmount) {
-                  totalCost += parsed.paymentAmount;
-                  yield {
-                    type: 'payment',
-                    data: {
-                      amount: parsed.paymentAmount,
-                      totalCost,
-                      remainingBudget: maxBudget - totalCost,
-                    },
-                  };
-                }
-              } catch {
-                // JSON解析失敗は無視
-              }
-            }
+      // ToolMessage の処理（ツール実行結果）
+      if (nodeName === 'tools') {
+        const content =
+          typeof token.content === 'string'
+            ? token.content
+            : contentBlocks.find((b: { type: string }) => b.type === 'text')?.text;
+
+        if (content && typeof content === 'string') {
+          // 決済情報の処理
+          const paymentInfo = processToolResult(content, totalCost, maxBudget);
+          if (paymentInfo) {
+            totalCost = paymentInfo.totalCost;
+            yield {
+              type: 'payment',
+              data: {
+                amount: paymentInfo.paymentAmount,
+                totalCost: paymentInfo.totalCost,
+                remainingBudget: paymentInfo.remainingBudget,
+              },
+            };
           }
         }
       }
     }
+
+    // 最終メッセージ
+    const finalMessage = fullContent.trim() || 'タスクが完了しました。';
 
     yield {
       type: 'end',
@@ -348,6 +416,7 @@ ${message}
         success: true,
         totalCost,
         remainingBudget: maxBudget - totalCost,
+        message: finalMessage,
       },
     };
   } catch (error) {
