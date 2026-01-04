@@ -270,13 +270,6 @@ export default function WalletPage() {
                       </a>
                     </div>
                   </div>
-
-                  <button
-                    disabled
-                    className="w-full cursor-not-allowed rounded-lg bg-purple-600 px-6 py-3 font-semibold text-white opacity-50"
-                  >
-                    Approve USDC (Coming Soon)
-                  </button>
                 </div>
               </div>
 
