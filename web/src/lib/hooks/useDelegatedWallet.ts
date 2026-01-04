@@ -17,15 +17,10 @@ export interface DelegatedWalletInfo {
 }
 
 export interface UseDelegatedWalletReturn {
-  /** Embedded wallet情報 */
   wallet: DelegatedWalletInfo | null;
-  /** 委譲処理中かどうか */
   isDelegating: boolean;
-  /** エラーメッセージ */
   error: string | null;
-  /** ウォレットを委譲する */
   delegateWallet: () => Promise<boolean>;
-  /** ローディング中かどうか */
   isLoading: boolean;
 }
 
