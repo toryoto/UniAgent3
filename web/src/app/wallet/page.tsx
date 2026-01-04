@@ -17,6 +17,7 @@ export default function WalletPage() {
     isDelegating,
     error: delegationError,
     delegateWallet,
+    undelegateWallet,
     isLoading,
   } = useDelegatedWallet();
   const [copied, setCopied] = useState(false);
@@ -63,6 +64,10 @@ export default function WalletPage() {
 
   const handleDelegate = async () => {
     await delegateWallet();
+  };
+
+  const handleUndelegate = async () => {
+    await undelegateWallet();
   };
 
   return (
@@ -198,6 +203,24 @@ export default function WalletPage() {
                         </p>
                       </div>
                     </div>
+
+                    <button
+                      onClick={handleUndelegate}
+                      disabled={isDelegating || !wallet}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg bg-red-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isDelegating ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          Removing delegation...
+                        </>
+                      ) : (
+                        <>
+                          <Shield className="h-5 w-5" />
+                          Remove Delegation
+                        </>
+                      )}
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
