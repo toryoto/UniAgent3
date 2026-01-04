@@ -11,18 +11,9 @@ import { discoverAgents, type A2ASkill } from '@agent-marketplace/shared';
 import { logger } from '../utils/logger.js';
 
 /**
- * discover_agents ツールのスキーマ定義
- */
-const discoverAgentsSchema = z.object({
-  category: z.string().optional().describe('検索するカテゴリ (例: "travel", "finance", "utility")'),
-  skillName: z.string().optional().describe('検索するスキル名 (部分一致)'),
-  maxPrice: z.number().optional().describe('最大価格 (USDC)'),
-  minRating: z.number().min(0).max(5).optional().describe('最小評価 (0-5)'),
-});
-
-/**
  * discover_agents ツール定義
  */
+// @ts-ignore - Type instantiation is excessively deep (TS2589)
 export const discoverAgentsTool = tool(
   async (input) => {
     try {
@@ -75,6 +66,14 @@ export const discoverAgentsTool = tool(
     description: `ブロックチェーン上のAgentRegistryからエージェントを検索します。
 カテゴリやスキル名で検索可能で、価格・評価でのフィルタリングもサポートしています。
 結果にはエージェントのID、名前、説明、URL、価格（USDC）、評価が含まれます。`,
-    schema: discoverAgentsSchema,
+    schema: z.object({
+      category: z
+        .string()
+        .optional()
+        .describe('検索するカテゴリ (例: "travel", "finance", "utility")'),
+      skillName: z.string().optional().describe('検索するスキル名 (部分一致)'),
+      maxPrice: z.number().optional().describe('最大価格 (USDC)'),
+      minRating: z.number().min(0).max(5).optional().describe('最小評価 (0-5)'),
+    }),
   }
 );

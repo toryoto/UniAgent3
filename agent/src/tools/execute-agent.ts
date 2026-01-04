@@ -245,19 +245,9 @@ async function executeAgentImpl(input: ExecuteAgentInput): Promise<ExecuteAgentR
 }
 
 /**
- * execute_agent ツールのスキーマ定義
- */
-const executeAgentSchema = z.object({
-  agentUrl: z.string().describe('エージェントのBase URL'),
-  task: z.string().describe('エージェントに依頼するタスク'),
-  maxPrice: z.number().describe('許容する最大価格 (USDC) - 参考値'),
-  walletId: z.string().describe('Privyウォレット ID'),
-  walletAddress: z.string().describe('ウォレットアドレス (0x...)'),
-});
-
-/**
  * execute_agent ツール定義
  */
+// @ts-ignore - Type instantiation is excessively deep (TS2589)
 export const executeAgentTool = tool(
   async (input) => {
     try {
@@ -302,6 +292,12 @@ export const executeAgentTool = tool(
   "walletId": "privy-wallet-id",
   "walletAddress": "0x..."
 }`,
-    schema: executeAgentSchema,
+    schema: z.object({
+      agentUrl: z.string().describe('エージェントのBase URL'),
+      task: z.string().describe('エージェントに依頼するタスク'),
+      maxPrice: z.number().describe('許容する最大価格 (USDC) - 参考値'),
+      walletId: z.string().describe('Privyウォレット ID'),
+      walletAddress: z.string().describe('ウォレットアドレス (0x...)'),
+    }),
   }
 );
