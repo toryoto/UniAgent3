@@ -279,8 +279,9 @@ ${message}
 
     for await (const chunk of stream) {
       // ストリームチャンクを処理
-      if (typeof chunk === 'object' && 'messages' in chunk) {
-        const messages = (chunk as { messages: unknown[] }).messages;
+      if (typeof chunk === 'object' && chunk !== null && 'messages' in chunk) {
+        const chunkRecord = chunk as Record<string, unknown>;
+        const messages = Array.isArray(chunkRecord.messages) ? chunkRecord.messages : [];
         for (const msg of messages) {
           if (typeof msg === 'object' && msg !== null && '_getType' in msg) {
             const msgType = (msg as { _getType: () => string })._getType();
