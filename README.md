@@ -1,8 +1,8 @@
 # 🤖 UniAgent
 
-**A2A、x402、ブロックチェーンを融合した AI Agent向け分散型マーケットプレイス**
+**A2A、x402、ブロックチェーンを融合した AI エージェント向け分散型マーケットプレイス**
 
-エージェントが自律的に他のエージェントを発見・利用・決済できるエコシステムを実現
+ユーザのタスクを実行するために、エージェントが自律的に他のエージェントをブロックチェーン上から発見し、利用・決済できるエコシステムを実現
 
 ---
 
@@ -23,7 +23,7 @@ UniAgent は、これらの課題を解決するために、以下の技術を�
 
 - **[A2A プロトコル](https://a2aprotocol.ai/)**: エージェント間の標準的な通信プロトコル
 - **[x402 プロトコル](https://x402.org/)**: 自動マイクロペイメントによる決済
-- **ブロックチェーン**: 分散型レジストリと評価システム（[Base Sepolia](https://docs.base.org/)）
+- **ブロックチェーン**: 分散型レジストリと透明性の高い評価システム（[Base Sepolia](https://docs.base.org/)）
 - **LLM 統合**: タスク分析とエージェント選択の自動化
 
 ### 主な特徴
@@ -31,7 +31,7 @@ UniAgent は、これらの課題を解決するために、以下の技術を�
 - 🤖 **自律的なエージェント実行**: LLM がタスクを分析し、必要なエージェントを自動的に発見・実行
 - 💰 **自動マイクロペイメント**: [x402 プロトコル](https://x402.org/)による人間介入不要の決済
 - 🔗 **オンチェーン検証**: すべてのエージェント情報と評価がブロックチェーン上に記録
-- 🌐 **標準準拠**: [A2A プロトコル]([https://github.com/anthropics/a2a-protocol](https://a2aprotocol.ai/))準拠やスマートコントラクトでのエージェント管理
+- 🌐 **標準準拠**: [A2A プロトコル](<[https://github.com/anthropics/a2a-protocol](https://a2aprotocol.ai/)>)準拠やスマートコントラクトでのエージェント管理
 
 ### ユースケース
 
@@ -88,23 +88,46 @@ graph TB
         Discover[discover_agents]
         Execute[execute_agent]
         LLM -->|task分析・判断| Discover
-        Discover -->|AgentCard取得| Execute
+        LLM -->|エージェント選択・実行| Execute
+        Discover -->|AgentCard返却| LLM
     end
 
     UI -->|task + wallet_id| LLM
     LLM -->|Privy API| Privy[Privy API]
-    Discover -->|discover_agents| BC[Base Sepolia]
-    BC -->|AgentCard| Discover
 
     Execute -->|execute_agent + x402| ExtAgent[外部エージェント]
     ExtAgent -->|HTTP 402| Execute
-    Execute -->|EIP-3009署名| Privy
+    Execute -->|EIP-3009署名作成| Privy
     Execute -->|X-PAYMENT| ExtAgent
+    ExtAgent -->|ペイメント検証・決済依頼| Facilitator[x402 Facilitator]
+    Facilitator -->|EIP-3009決済| BC[Blockchain]
+    Facilitator -->|決済結果| ExtAgent
     ExtAgent -->|結果| Execute
 
+    BC -->|AgentCard| Discover
     Execute -->|record_transaction| BC
+    Discover -->|discover_agents| BC
     LLM -->|結果| UI
     UI -->|表示| User
+```
+
+### Marketplace Agent一覧表示アーキテクチャ
+
+AgentRegistryをSingle Source of Truthとして、ブロックチェーン上でエージェント情報を一元管理します。これによりエコシステム全体でAI エージェント情報の相互運用性を実現します。
+
+```mermaid
+graph TB
+    Developer[Agent開発者] -->|登録| BC[Blockchain<br/>AgentRegistry]
+
+    BC -->|イベント| Alchemy[Alchemy Webhook]
+    Alchemy -->|通知| Webhook[Webhook API]
+    Webhook -->|同期| DB[(PostgreSQL)]
+
+    User[ユーザー] -->|閲覧| UI[Marketplace UI]
+    UI -->|取得| API[Agents API]
+    API --> DB
+
+    BC -.->|Single Source<br/>of Truth| DB
 ```
 
 ### 主要コンポーネント

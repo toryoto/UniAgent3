@@ -7,7 +7,7 @@ Next.js 15とReact 19で構築されたUniAgentのWebアプリケーション。
 - **Next.js 15** (App Router)
 - **React 19**, **Tailwind CSS**
 - **Privy** (認証・ウォレット)
-- **wagmi**, **ethers.js** (ブロックチェーン)
+- **wagmi**, **ethers.js** (ブロックチェーン連携)
 - **React Query** (状態管理)
 
 ## セットアップ
@@ -56,7 +56,7 @@ npm run type-check
 
 ## データベース管理
 
-### Prismaスキーマの変更をSupabaseに反映
+### Prismaスキーマの変更をDBに反映
 
 Prismaスキーマ（`prisma/schema.prisma`）を変更した後、以下の手順でデータベースに反映します：
 
