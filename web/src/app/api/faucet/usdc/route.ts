@@ -34,20 +34,6 @@ const ERC20_ABI = [
   },
 ] as const;
 
-const FAUCET_ADMIN_PRIVATE_KEY = `0x${process.env.FAUCET_ADMIN_PRIVATE_KEY}` as `0x${string}`;
-const account = privateKeyToAccount(FAUCET_ADMIN_PRIVATE_KEY);
-
-const walletClient = createWalletClient({
-  account,
-  chain: baseSepolia,
-  transport: http(`${process.env.NEXT_PUBLIC_RPC_URL}`),
-});
-
-const publicClient = createPublicClient({
-  chain: baseSepolia,
-  transport: http(`${process.env.NEXT_PUBLIC_RPC_URL}`),
-});
-
 interface AccessCheckResult {
   limited: boolean;
   reason?: 'ip' | 'wallet';
@@ -187,6 +173,31 @@ export async function POST(request: NextRequest) {
     if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
       return NextResponse.json({ error: 'Invalid wallet address format' }, { status: 400 });
     }
+
+    const privateKey = process.env.FAUCET_ADMIN_PRIVATE_KEY;
+    if (!privateKey) {
+      return NextResponse.json(
+        { error: 'Faucet service is not configured. Please contact administrator.' },
+        { status: 503 }
+      );
+    }
+
+    const formattedPrivateKey = privateKey.startsWith('0x')
+      ? (privateKey as `0x${string}`)
+      : (`0x${privateKey}` as `0x${string}`);
+
+    const account = privateKeyToAccount(formattedPrivateKey);
+
+    const walletClient = createWalletClient({
+      account,
+      chain: baseSepolia,
+      transport: http(process.env.NEXT_PUBLIC_RPC_URL),
+    });
+
+    const publicClient = createPublicClient({
+      chain: baseSepolia,
+      transport: http(process.env.NEXT_PUBLIC_RPC_URL),
+    });
 
     // IPアドレスの取得
     const ipAddress =
