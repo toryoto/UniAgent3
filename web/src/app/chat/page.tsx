@@ -17,8 +17,6 @@ export default function ChatPage() {
   const { wallet } = useDelegatedWallet();
   const [maxBudget, setMaxBudget] = useState(DEFAULT_MAX_BUDGET);
 
-  // Privy embedded walletからwalletIdとwalletAddressを取得
-  // delegated walletの場合のみサーバー側で署名可能
   const walletId = wallet?.walletId || '';
   const walletAddress = wallet?.address || '';
 
@@ -121,19 +119,15 @@ export default function ChatPage() {
           {/* Chat Area */}
           <div className="flex-1 overflow-y-auto p-4 md:p-8">
             <div className="mx-auto max-w-4xl">
-              {/* Wallet Warning */}
               {walletWarning}
 
-              {/* Welcome Message (メッセージがない場合のみ表示) */}
               {messages.length === 0 && <WelcomeMessage />}
 
-              {/* Messages */}
               <div className="space-y-4">
                 {messages.map((message) => (
                   <MessageBubble key={message.id} message={message} />
                 ))}
 
-                {/* Loading indicator */}
                 {isLoading && messages.length > 0 && (
                   <div className="flex items-center gap-2 text-xs text-slate-400 md:text-sm">
                     <Loader2 className="h-4 w-4 animate-spin" />
