@@ -7,17 +7,37 @@
  * - ストリーミング対応
  */
 
-import { createAgent, initChatModel } from 'langchain';
+import { createAgent, createMiddleware, initChatModel } from 'langchain';
+import * as z from 'zod';
 import type { AgentRequest, AgentResponse, ExecutionLogEntry } from '@agent-marketplace/shared';
 import { discoverAgentsTool, executeAgentTool } from '../tools/index.js';
 import { logger, logStep, logSeparator } from '../utils/logger.js';
-import { SYSTEM_PROMPT } from '../prompts/system-prompt.ts';
+import { SYSTEM_PROMPT } from '../prompts/system-prompt.js';
+
+const contextSchema = z.object({
+  agentId: z.string().optional(),
+});
+type ContextType = z.infer<typeof contextSchema>;
+
+const loggingMiddleware = createMiddleware({
+  name: 'Logging',
+  // @ts-expect-error - Zod version mismatch
+  contextSchema,
+  beforeModel: (state, runtime) => {
+    const context = runtime.context as ContextType;
+    if (context?.agentId) {
+      logger.agent.info('Processing Agent ID: ', { agentId: context.agentId });
+      return;
+    }
+    return;
+  },
+});
 
 /**
  * エージェントを実行（非ストリーミング）
  */
 export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
-  const { message, walletId, walletAddress, maxBudget } = request;
+  const { message, walletId, walletAddress, maxBudget, agentId } = request;
   const executionLog: ExecutionLogEntry[] = [];
   let totalCost = 0;
   let stepCounter = 0;
@@ -41,6 +61,9 @@ export async function runAgent(request: AgentRequest): Promise<AgentResponse> {
       model,
       tools: [discoverAgentsTool, executeAgentTool],
       systemPrompt: SYSTEM_PROMPT,
+      // @ts-expect-error - Zod version mismatch
+      contextSchema: contextSchema,
+      middleware: [loggingMiddleware],
     });
 
     // ユーザーメッセージにコンテキストを追加
@@ -67,9 +90,14 @@ ${message}
 
     logStep(stepCounter, 'llm', 'Starting ReAct agent loop');
 
-    const result = await agent.invoke({
-      messages: [{ role: 'user', content: userMessage }],
-    });
+    const result = await agent.invoke(
+      {
+        messages: [{ role: 'user', content: userMessage }],
+      },
+      {
+        context: { agentId },
+      }
+    );
 
     // メッセージからログを抽出
     for (const msg of result.messages) {
@@ -170,7 +198,7 @@ ${message}
 export async function* runAgentStream(
   request: AgentRequest
 ): AsyncGenerator<{ type: string; data: unknown }, void, unknown> {
-  const { message, walletId, walletAddress, maxBudget } = request;
+  const { message, walletId, walletAddress, maxBudget, agentId } = request;
   let totalCost = 0;
   let stepCounter = 0;
 
@@ -184,6 +212,9 @@ export async function* runAgentStream(
       model,
       tools: [discoverAgentsTool, executeAgentTool],
       systemPrompt: SYSTEM_PROMPT,
+      // @ts-expect-error - Zod version mismatch
+      contextSchema,
+      middleware: [loggingMiddleware],
     });
 
     const userMessage = `
@@ -216,6 +247,7 @@ ${message}
 
     const stream = await agent.stream({
       messages: [{ role: 'user', content: userMessage }],
+      ...(agentId ? { agentId } : {}),
     });
 
     for await (const chunk of stream) {
