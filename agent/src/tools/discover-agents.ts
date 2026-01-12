@@ -7,7 +7,8 @@
 
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { discoverAgents, type A2ASkill } from '@agent-marketplace/shared';
+import { discoverAgents } from '../services/agent-discovery.js';
+import type { A2ASkill } from '@agent-marketplace/shared';
 import { logger } from '../utils/logger.js';
 
 /**

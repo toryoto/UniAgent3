@@ -1,13 +1,20 @@
 /**
  * Agent Discovery Service
  *
- * オンチェーンからAgentCardを検索・取得し、.well-known/agent.jsonの情報を併せて返す
+ * オンチェーンからAgentCardを取得し、.well-known/agent.jsonの情報を併せて返す
  */
 
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESSES, RPC_URL, USDC_DECIMALS } from '../config.js';
-import { AGENT_REGISTRY_ABI } from '../contract.js';
-import type { AgentCard, AgentJson, A2ASkill, DiscoveredAgent } from '../types.js';
+import {
+  CONTRACT_ADDRESSES,
+  RPC_URL,
+  formatUSDCAmount,
+  AGENT_REGISTRY_ABI,
+  type AgentCard,
+  type AgentJson,
+  type A2ASkill,
+  type DiscoveredAgent,
+} from '@agent-marketplace/shared';
 
 export interface DiscoverAgentsInput {
   category?: string;
@@ -82,8 +89,8 @@ function parseOnChainAgent(onChainData: AgentCard): Omit<DiscoveredAgent, 'endpo
   const averageRating = ratingCount > 0 ? totalRatings / ratingCount : 0;
 
   // 価格をUSDC単位に変換 (6 decimals)
-  const pricePerCall = Number(onChainData.payment?.pricePerCall || 0);
-  const priceUsdc = pricePerCall / Math.pow(10, USDC_DECIMALS);
+  const pricePerCall = onChainData.payment?.pricePerCall || BigInt(0);
+  const priceUsdc = formatUSDCAmount(pricePerCall);
 
   return {
     agentId: onChainData.agentId,
@@ -105,10 +112,6 @@ function parseOnChainAgent(onChainData: AgentCard): Omit<DiscoveredAgent, 'endpo
     imageUrl: onChainData.imageUrl,
   };
 }
-
-// ============================================================================
-// Main Function
-// ============================================================================
 
 /**
  * エージェント検索
